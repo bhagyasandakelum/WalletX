@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,71 +8,116 @@ import {
   Modal,
   TextInput,
   Alert,
-  ScrollView,
-  Dimensions,
+  SafeAreaView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { PieChart } from 'react-native-chart-kit';
 
-const screenWidth = Dimensions.get('window').width;
+/* ---------------- CONSTANTS ---------------- */
+const FILTERS = ['24h', 'Week', 'Year'];
 
-const CATEGORIES = [
-  'Food',
-  'Transport',
-  'Bills',
-  'Entertainment',
-  'Shopping',
-  'Health',
-  'Other',
-];
+const lightTheme = {
+  bg: '#f4f4f4',
+  card: '#ffffff',
+  text: '#000',
+  sub: '#777',
+};
 
-export default function AddExpense() {
+const darkTheme = {
+  bg: '#000',
+  card: '#121212',
+  text: '#fff',
+  sub: '#aaa',
+};
+
+export default function App() {
+  /* ---------------- THEME ---------------- */
+  const [darkMode, setDarkMode] = useState(false);
+  const theme = darkMode ? darkTheme : lightTheme;
+
+  /* ---------------- DATA ---------------- */
   const [accounts, setAccounts] = useState([
-    { id: '1', name: 'Cash', balance: 5000 },
+    { id: '1', name: 'Local balance', balance: 149868 },
+    { id: '2', name: 'Savings', balance: 54724 },
   ]);
-  const [expenses, setExpenses] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
+  const [showAccounts, setShowAccounts] = useState(false);
 
-  const [showAddAccount, setShowAddAccount] = useState(false);
-  const [showAddExpense, setShowAddExpense] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [expenses, setExpenses] = useState([]);
+  const [filter, setFilter] = useState('24h');
+
+  /* ---------------- MODALS ---------------- */
+  const [addAccountModal, setAddAccountModal] = useState(false);
+  const [addExpenseModal, setAddExpenseModal] = useState(false);
 
   const [accName, setAccName] = useState('');
   const [accBalance, setAccBalance] = useState('');
+  const [amount, setAmount] = useState('');
 
-  const [expAmount, setExpAmount] = useState('');
-  const [expCategory, setExpCategory] = useState(CATEGORIES[0]);
+  /* ---------------- HELPERS ---------------- */
+  const filteredExpenses = useMemo(() => {
+    const now = new Date();
 
-  /* ---------------- ACCOUNT ---------------- */
+    return expenses
+      .filter(e => e.accountId === selectedAccount?.id)
+      .filter(e => {
+        const diff = (now - new Date(e.date)) / (1000 * 60 * 60 * 24);
+        if (filter === '24h') return diff <= 1;
+        if (filter === 'Week') return diff <= 7;
+        return diff <= 365;
+      })
+      .sort((a, b) => b.amount - a.amount);
+  }, [expenses, filter, selectedAccount]);
 
+  /* ---------------- ACTIONS ---------------- */
   const addAccount = () => {
     if (!accName || !accBalance) return;
 
-    const newAcc = {
+    const acc = {
       id: Date.now().toString(),
       name: accName,
       balance: Number(accBalance),
     };
 
-    setAccounts([...accounts, newAcc]);
-    setSelectedAccount(newAcc);
+    setAccounts([...accounts, acc]);
+    setSelectedAccount(acc);
+    setAddAccountModal(false);
     setAccName('');
     setAccBalance('');
-    setShowAddAccount(false);
   };
 
-  const deleteAccount = (id) => {
+  const addExpense = () => {
+    if (!amount) return;
+
+    const expense = {
+      id: Date.now().toString(),
+      accountId: selectedAccount.id,
+      amount: Number(amount),
+      date: new Date(),
+    };
+
+    setExpenses([expense, ...expenses]);
+
+    setAccounts(accounts.map(a =>
+      a.id === selectedAccount.id
+        ? { ...a, balance: a.balance - Number(amount) }
+        : a
+    ));
+
+    setAmount('');
+    setAddExpenseModal(false);
+  };
+
+  const deleteAccount = (acc) => {
     Alert.alert(
-      'Delete Account?',
-      "If deleted, you can't recover it.\nAll data will be lost.",
+      'Delete account?',
+      'If deleted, all data will be lost.',
       [
         { text: 'Cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            setAccounts(accounts.filter(a => a.id !== id));
-            setExpenses(expenses.filter(e => e.accountId !== id));
+            setAccounts(accounts.filter(a => a.id !== acc.id));
+            setExpenses(expenses.filter(e => e.accountId !== acc.id));
             setSelectedAccount(accounts[0] || null);
           },
         },
@@ -80,295 +125,279 @@ export default function AddExpense() {
     );
   };
 
-  /* ---------------- EXPENSE ---------------- */
-
-  const addExpense = () => {
-    if (!expAmount) return;
-
-    const newExpense = {
-      id: Date.now().toString(),
-      accountId: selectedAccount.id,
-      amount: Number(expAmount),
-      category: expCategory,
-    };
-
-    setExpenses([...expenses, newExpense]);
-
-    setAccounts(accounts.map(acc =>
-      acc.id === selectedAccount.id
-        ? { ...acc, balance: acc.balance - Number(expAmount) }
-        : acc
-    ));
-
-    setExpAmount('');
-    setShowAddExpense(false);
-  };
-
-  /* ---------------- PIE CHART ---------------- */
-
-  const getPieData = () => {
-    if (!selectedAccount) return [];
-
-    const accExpenses = expenses.filter(
-      e => e.accountId === selectedAccount.id
-    );
-
-    const spent = accExpenses.reduce((s, e) => s + e.amount, 0);
-    const total = spent + selectedAccount.balance;
-
-    const sums = {};
-    accExpenses.forEach(e => {
-      sums[e.category] = (sums[e.category] || 0) + e.amount;
-    });
-
-    const colors = ['#ff7675', '#74b9ff', '#ffeaa7', '#55efc4', '#a29bfe'];
-
-    return Object.keys(sums).map((cat, i) => ({
-      name: cat,
-      percentage: (sums[cat] / total) * 100,
-      color: colors[i % colors.length],
-      legendFontColor: '#fff',
-      legendFontSize: 13,
-    }));
-  };
-
+  /* ---------------- UI ---------------- */
   return (
-    <View style={styles.container}>
-      <ScrollView>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
 
-        {/* ACCOUNTS */}
-        <FlatList
-          data={accounts}
-          horizontal
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => setSelectedAccount(item)}
-              onLongPress={() => deleteAccount(item.id)}
-            >
-              <LinearGradient
-                colors={['#000', '#1c1c1c']}
+      {/* HEADER */}
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
+
+        {/* THEME SWITCH */}
+        <View style={styles.switchWrap}>
+          <Pressable
+            style={[
+              styles.switchBtn,
+              !darkMode && styles.switchActive,
+            ]}
+            onPress={() => setDarkMode(false)}
+          >
+            <Text>🌞</Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.switchBtn,
+              darkMode && styles.switchActive,
+            ]}
+            onPress={() => setDarkMode(true)}
+          >
+            <Text>🌙</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      {/* ACCOUNT CARD */}
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <Text style={{ color: theme.sub }}>{selectedAccount?.name}</Text>
+        <Text style={[styles.balance, { color: theme.text }]}>
+          ${selectedAccount?.balance}
+        </Text>
+
+        <Pressable onPress={() => setShowAccounts(!showAccounts)}>
+          <Text style={{ fontSize: 20, color: theme.text }}>⌄</Text>
+        </Pressable>
+
+        {/* DROPDOWN */}
+        {showAccounts && (
+          <View style={[styles.dropdown, { backgroundColor: theme.card }]}>
+            {accounts.map(acc => (
+              <Pressable
+                key={acc.id}
+                onPress={() => {
+                  setSelectedAccount(acc);
+                  setShowAccounts(false);
+                }}
+                onLongPress={() => deleteAccount(acc)}
                 style={[
-                  styles.accountCard,
-                  selectedAccount?.id === item.id && styles.activeCard,
+                  styles.dropdownItem,
+                  acc.id === selectedAccount?.id && styles.dropdownActive,
                 ]}
               >
-                <Text style={styles.accName}>{item.name}</Text>
-                <Text style={styles.accBalance}>Rs {item.balance}</Text>
-              </LinearGradient>
-            </Pressable>
-          )}
-        />
-
-        {/* PIE CHART */}
-        {getPieData().length > 0 && (
-          <View style={styles.chartBox}>
-            <Text style={styles.chartTitle}>
-              Budget Usage – {selectedAccount?.name}
-            </Text>
-            <PieChart
-              data={getPieData()}
-              width={screenWidth - 32}
-              height={220}
-              accessor="percentage"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              chartConfig={{
-                color: () => '#fff',
-                labelColor: () => '#fff',
-              }}
-            />
+                <Text style={{ color: theme.text }}>
+                  {acc.name}
+                </Text>
+                <Text style={{ color: theme.sub }}>
+                  ${acc.balance}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         )}
-      </ScrollView>
+      </View>
 
-      {/* FABs */}
-      <Pressable style={styles.fabLeft} onPress={() => setShowAddAccount(true)}>
-        <Text style={styles.fabText}>＋</Text>
-      </Pressable>
-
-      <Pressable style={styles.fabRight} onPress={() => setShowAddExpense(true)}>
-        <Text style={styles.fabText}>₹</Text>
-      </Pressable>
-
-      {/* ADD ACCOUNT */}
-      <Modal visible={showAddAccount} transparent animationType="slide">
-        <View style={styles.modal}>
-          <Text style={styles.modalTitle}>Add Account</Text>
-
-          <TextInput
-            placeholder="Account Name"
-            placeholderTextColor="#999"
-            style={styles.input}
-            value={accName}
-            onChangeText={setAccName}
-          />
-
-          <TextInput
-            placeholder="Initial Balance"
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            style={styles.input}
-            value={accBalance}
-            onChangeText={setAccBalance}
-          />
-
-          <View style={styles.modalBtnRow}>
-            <Pressable style={styles.cancelBtn} onPress={() => setShowAddAccount(false)}>
-              <Text style={styles.btnText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={styles.submitBtn} onPress={addAccount}>
-              <Text style={styles.btnText}>Add</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ADD EXPENSE */}
-      <Modal visible={showAddExpense} transparent animationType="slide">
-        <View style={styles.modal}>
-          <Text style={styles.modalTitle}>Add Expense</Text>
-
-          <TextInput
-            placeholder="Amount"
-            placeholderTextColor="#999"
-            keyboardType="numeric"
-            style={styles.input}
-            value={expAmount}
-            onChangeText={setExpAmount}
-          />
-
-          <FlatList
-            data={CATEGORIES}
-            horizontal
-            keyExtractor={item => item}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => setExpCategory(item)}
+      {/* SORT */}
+      <View style={styles.filterRow}>
+        <Text style={{ color: theme.sub }}>Sort by</Text>
+        <View style={{ flexDirection: 'row' }}>
+          {FILTERS.map(f => (
+            <Pressable key={f} onPress={() => setFilter(f)}>
+              <Text
                 style={[
-                  styles.categoryChip,
-                  expCategory === item && styles.activeChip,
+                  styles.filterText,
+                  { color: filter === f ? theme.text : theme.sub },
                 ]}
               >
-                <Text style={styles.chipText}>{item}</Text>
-              </Pressable>
-            )}
-          />
+                {f}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
 
-          <View style={styles.modalBtnRow}>
-            <Pressable style={styles.cancelBtn} onPress={() => setShowAddExpense(false)}>
-              <Text style={styles.btnText}>Cancel</Text>
-            </Pressable>
-            <Pressable style={styles.submitBtn} onPress={addExpense}>
-              <Text style={styles.btnText}>Add</Text>
-            </Pressable>
+      {/* EXPENSES */}
+      <FlatList
+        data={filteredExpenses}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ paddingBottom: 160 }}
+        renderItem={({ item }) => (
+          <View style={[styles.expense, { backgroundColor: theme.card }]}>
+            <Text style={{ color: theme.text }}>
+              -${item.amount}
+            </Text>
+            <Text style={{ color: theme.sub }}>
+              {item.date.toDateString()}
+            </Text>
           </View>
+        )}
+        ListEmptyComponent={
+          <Text style={{ color: theme.sub, textAlign: 'center', marginTop: 30 }}>
+            No expenses
+          </Text>
+        }
+      />
+
+      {/* FLOATING BUTTONS */}
+      <Pressable
+        style={[styles.fab, { backgroundColor: 'green', right: 90 }]}
+        onPress={() => setAddAccountModal(true)}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
+
+      <Pressable
+        style={[styles.fab, { backgroundColor: 'red' }]}
+        onPress={() => setAddExpenseModal(true)}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </Pressable>
+
+      {/* FOOTER */}
+      <View style={[styles.footer, { backgroundColor: theme.card }]}>
+        <Text style={styles.footerActive}>💳</Text>
+        <Text style={styles.footerIcon}>📊</Text>
+        <Text style={styles.footerIcon}>🧭</Text>
+        <Text style={styles.footerIcon}>🔔</Text>
+        <Text style={styles.footerIcon}>⚙️</Text>
+      </View>
+
+      {/* MODALS */}
+      <Modal visible={addAccountModal} transparent animationType="slide">
+        <View style={styles.modal}>
+          <Text style={styles.modalTitle}>Add Account</Text>
+          <TextInput placeholder="Name" style={styles.input} value={accName} onChangeText={setAccName} />
+          <TextInput placeholder="Balance" keyboardType="numeric" style={styles.input} value={accBalance} onChangeText={setAccBalance} />
+          <Pressable style={styles.submit} onPress={addAccount}>
+            <Text style={styles.submitText}>Save</Text>
+          </Pressable>
         </View>
       </Modal>
-    </View>
+
+      <Modal visible={addExpenseModal} transparent animationType="slide">
+        <View style={styles.modal}>
+          <Text style={styles.modalTitle}>Add Expense</Text>
+          <TextInput placeholder="Amount" keyboardType="numeric" style={styles.input} value={amount} onChangeText={setAmount} />
+          <Pressable style={styles.submit} onPress={addExpense}>
+            <Text style={styles.submitText}>Add</Text>
+          </Pressable>
+        </View>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 
 /* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
 
-  accountCard: {
-    width: screenWidth - 40,
-    margin: 10,
-    padding: 22,
-    borderRadius: 18,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
   },
-  activeCard: { borderWidth: 1.5, borderColor: '#fff' },
-  accName: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  accBalance: { color: '#bbb', marginTop: 10 },
+  title: { fontSize: 22, fontWeight: '700' },
 
-  chartBox: {
+  switchWrap: {
+    flexDirection: 'row',
+    backgroundColor: '#ddd',
+    borderRadius: 20,
+  },
+  switchBtn: {
+    padding: 6,
+    width: 40,
+    alignItems: 'center',
+  },
+  switchActive: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+  },
+
+  card: {
     margin: 16,
-    backgroundColor: '#111',
+    padding: 20,
     borderRadius: 16,
-    padding: 12,
   },
-  chartTitle: {
-    color: '#fff',
-    textAlign: 'center',
+  balance: {
+    fontSize: 28,
     fontWeight: '700',
-    marginBottom: 8,
+    marginVertical: 8,
   },
 
-  fabLeft: {
-    position: 'absolute',
-    bottom: 30,
-    left: 30,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
+  dropdown: {
+    marginTop: 10,
+    borderRadius: 12,
+    elevation: 6,
   },
-  fabRight: {
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 0.5,
+    borderColor: '#333',
+  },
+  dropdownActive: {
+    backgroundColor: '#222',
+  },
+
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  filterText: {
+    marginLeft: 14,
+    fontWeight: '600',
+  },
+
+  expense: {
+    margin: 16,
+    padding: 16,
+    borderRadius: 14,
+  },
+
+  fab: {
     position: 'absolute',
-    bottom: 30,
-    right: 30,
+    bottom: 80,
+    right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#555',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   fabText: { color: '#fff', fontSize: 26 },
 
-  modal: {
-    marginTop: 140,
-    margin: 20,
-    padding: 24,
-    backgroundColor: '#111',
-    borderRadius: 20,
-  },
-  modalTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 18,
-  },
-
-  input: {
-    backgroundColor: '#1c1c1c',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    color: '#fff',
-  },
-
-  modalBtnRow: {
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    height: 64,
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
+    justifyContent: 'space-around',
+    alignItems: 'center',
   },
-  submitBtn: {
-    backgroundColor: '#2ecc71',
-    paddingVertical: 12,
-    paddingHorizontal: 26,
-    borderRadius: 14,
-  },
-  cancelBtn: {
-    backgroundColor: '#555',
-    paddingVertical: 12,
-    paddingHorizontal: 26,
-    borderRadius: 14,
-  },
-  btnText: { color: '#fff', fontWeight: '600' },
+  footerIcon: { fontSize: 22, color: '#777' },
+  footerActive: { fontSize: 24, fontWeight: '700' },
 
-  categoryChip: {
-    backgroundColor: '#222',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    marginRight: 10,
+  modal: {
+    marginTop: 200,
+    margin: 20,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 16,
   },
-  activeChip: { backgroundColor: '#2ecc71' },
-  chipText: { color: '#fff' },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  submit: {
+    backgroundColor: '#000',
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitText: { color: '#fff', fontWeight: '600' },
 });
