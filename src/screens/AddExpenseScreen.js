@@ -136,30 +136,7 @@ export default function App() {
         )}
       </Pressable>
 
-      {/* ---------- SORT ---------- */}
-      <View style={styles.sortRow}>
-        <Pressable onPress={() => setSortBy('time')}>
-          <Text
-            style={[
-              styles.sortBtn,
-              sortBy === 'time' && styles.sortActive,
-            ]}
-          >
-            Time
-          </Text>
-        </Pressable>
-
-        <Pressable onPress={() => setSortBy('amount')}>
-          <Text
-            style={[
-              styles.sortBtn,
-              sortBy === 'amount' && styles.sortActive,
-            ]}
-          >
-            Amount
-          </Text>
-        </Pressable>
-      </View>
+      {/* ---------- SORT BUTTONS ---------- */}
 
       {/* ---------- EXPENSE LIST ---------- */}
       <FlatList
