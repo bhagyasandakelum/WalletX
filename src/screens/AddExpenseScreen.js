@@ -8,8 +8,11 @@ import {
   SafeAreaView,
   Switch,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
-export default function App() {
+export default function AddExpenseScreen() {
+  const navigation = useNavigation();
+
   /* ---------------- STATE ---------------- */
   const [themeMode, setThemeMode] = useState('light');
   const [showAccounts, setShowAccounts] = useState(false);
@@ -64,9 +67,7 @@ export default function App() {
   };
 
   const sortedExpenses = useMemo(() => {
-    const list = expenses.filter(
-      e => e.accountId === selectedAccount.id
-    );
+    const list = expenses.filter(e => e.accountId === selectedAccount.id);
     if (sortBy === 'amount') {
       return [...list].sort((a, b) => b.amount - a.amount);
     }
@@ -78,9 +79,7 @@ export default function App() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          WalletX
-        </Text>
+        <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
 
         {/* THEME RADIO TOGGLE */}
         <View style={styles.themeToggle}>
@@ -102,9 +101,7 @@ export default function App() {
       >
         <View style={styles.cardHeader}>
           <View>
-            <Text style={{ color: theme.sub }}>
-              {selectedAccount.name}
-            </Text>
+            <Text style={{ color: theme.sub }}>{selectedAccount.name}</Text>
             <Text style={[styles.balance, { color: theme.text }]}>
               ${selectedAccount.balance}
             </Text>
@@ -137,6 +134,7 @@ export default function App() {
       </Pressable>
 
       {/* ---------- SORT BUTTONS ---------- */}
+      {/* You can add sort buttons here */}
 
       {/* ---------- EXPENSE LIST ---------- */}
       <FlatList
@@ -149,9 +147,7 @@ export default function App() {
               <Text style={styles.category}>{item.title}</Text>
               <Text style={styles.amount}>-${item.amount}</Text>
             </View>
-            <Text style={styles.date}>
-              {item.date.toDateString()}
-            </Text>
+            <Text style={styles.date}>{item.date.toDateString()}</Text>
           </View>
         )}
       />
@@ -169,10 +165,20 @@ export default function App() {
 
       {/* ---------- FOOTER ---------- */}
       <View style={styles.footer}>
-        <Text style={[styles.footerItem, styles.footerActive]}>
+        <Text
+          style={[styles.footerItem, styles.footerActive]}
+          onPress={() => navigation.navigate('AddExpense')}
+        >
           🏠
         </Text>
-        <Text style={styles.footerItem}>📊</Text>
+
+        <Text
+          style={styles.footerItem}
+          onPress={() => navigation.navigate('Stats')}
+        >
+          📊
+        </Text>
+
         <Text style={styles.footerItem}>⚙️</Text>
       </View>
     </SafeAreaView>
