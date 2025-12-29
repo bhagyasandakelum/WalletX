@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   TextInput,
   Modal,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -35,7 +36,6 @@ export default function AddExpenseScreen() {
   /* ---------------- FORM STATE ---------------- */
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountBalance, setNewAccountBalance] = useState('');
-
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
 
@@ -77,20 +77,23 @@ export default function AddExpenseScreen() {
   const addExpense = () => {
     if (!expenseTitle || !expenseAmount) return;
 
+    const amount = Number(expenseAmount);
+
     const expense = {
       id: Date.now(),
       title: expenseTitle,
-      amount: Number(expenseAmount),
+      amount,
       date: new Date(),
       accountId: selectedAccount.id,
     };
 
     setExpenses(prev => [expense, ...prev]);
 
+    // ✅ Always deduct — balance can go negative
     setAccounts(prev =>
       prev.map(acc =>
         acc.id === selectedAccount.id
-          ? { ...acc, balance: acc.balance - expense.amount }
+          ? { ...acc, balance: acc.balance - amount }
           : acc
       )
     );
@@ -98,6 +101,26 @@ export default function AddExpenseScreen() {
     setExpenseTitle('');
     setExpenseAmount('');
     setShowAddExpense(false);
+  };
+
+  const deleteAccount = acc => {
+    Alert.alert(
+      'Delete Account',
+      'If deleted, all expenses will be lost. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            setAccounts(prev => prev.filter(a => a.id !== acc.id));
+            setExpenses(prev => prev.filter(e => e.accountId !== acc.id));
+            setSelectedAccount(accounts[0]);
+            setShowAccounts(false);
+          },
+        },
+      ]
+    );
   };
 
   const filteredExpenses = useMemo(
@@ -112,7 +135,6 @@ export default function AddExpenseScreen() {
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
 
-        {/* THEME RADIO TOGGLE */}
         <View style={[styles.themeSwitch, { borderColor: theme.border }]}>
           <Pressable
             style={[
@@ -137,36 +159,45 @@ export default function AddExpenseScreen() {
       </View>
 
       {/* ---------- ACCOUNT CARD ---------- */}
-      <Pressable
-        style={[styles.card, { backgroundColor: theme.card }]}
-        onPress={() => setShowAccounts(!showAccounts)}
-      >
-        <Text style={{ color: theme.sub }}>{selectedAccount.name}</Text>
-        <Text style={[styles.balance, { color: theme.text }]}>
-          ${selectedAccount.balance}
-        </Text>
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <Pressable onPress={() => setShowAccounts(!showAccounts)}>
+          <Text style={{ color: theme.sub }}>{selectedAccount.name}</Text>
+          <Text style={[styles.balance, { color: theme.text }]}>
+            ${selectedAccount.balance}
+          </Text>
+        </Pressable>
 
-        {showAccounts &&
-          accounts.map(acc => (
-            <Pressable
-              key={acc.id}
-              style={styles.accountItem}
-              onPress={() => {
-                setSelectedAccount(acc);
-                setShowAccounts(false);
-              }}
-            >
-              <Text>{acc.name}</Text>
-              <Text>${acc.balance}</Text>
-            </Pressable>
-          ))}
-      </Pressable>
+        <Pressable
+          style={styles.deleteBtn}
+          onPress={() => deleteAccount(selectedAccount)}
+        >
+          <Text style={styles.deleteText}>🗑️</Text>
+        </Pressable>
+
+        {showAccounts && (
+          <View style={[styles.dropdown, { borderColor: theme.border }]}>
+            {accounts.map(acc => (
+              <Pressable
+                key={acc.id}
+                style={[styles.dropdownItem, { backgroundColor: theme.bg }]}
+                onPress={() => {
+                  setSelectedAccount(acc);
+                  setShowAccounts(false);
+                }}
+              >
+                <Text style={{ fontWeight: '700' }}>{acc.name}</Text>
+                <Text>${acc.balance}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
 
       {/* ---------- EXPENSE LIST ---------- */}
       <FlatList
         data={filteredExpenses}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 140, paddingTop: 10 }}
         renderItem={({ item }) => (
           <View style={[styles.expense, { backgroundColor: theme.card }]}>
             <View>
@@ -217,9 +248,14 @@ export default function AddExpenseScreen() {
               value={newAccountBalance}
               onChangeText={setNewAccountBalance}
             />
-            <Pressable style={styles.primaryBtn} onPress={addAccount}>
-              <Text style={styles.btnText}>Add</Text>
-            </Pressable>
+            <View style={styles.modalRow}>
+              <Pressable style={styles.cancelBtn} onPress={() => setShowAddAccount(false)}>
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.primaryBtn} onPress={addAccount}>
+                <Text style={styles.btnText}>Add</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -242,9 +278,14 @@ export default function AddExpenseScreen() {
               value={expenseAmount}
               onChangeText={setExpenseAmount}
             />
-            <Pressable style={styles.primaryBtn} onPress={addExpense}>
-              <Text style={styles.btnText}>Add</Text>
-            </Pressable>
+            <View style={styles.modalRow}>
+              <Pressable style={styles.cancelBtn} onPress={() => setShowAddExpense(false)}>
+                <Text>Cancel</Text>
+              </Pressable>
+              <Pressable style={styles.primaryBtn} onPress={addExpense}>
+                <Text style={styles.btnText}>Add</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -252,10 +293,7 @@ export default function AddExpenseScreen() {
       {/* ---------- FOOTER ---------- */}
       <View style={styles.footer}>
         <Text style={[styles.footerItem, styles.footerActive]}>🏠</Text>
-        <Text
-          style={styles.footerItem}
-          onPress={() => navigation.navigate('Stats')}
-        >
+        <Text style={styles.footerItem} onPress={() => navigation.navigate('Stats')}>
           📊
         </Text>
         <Text style={styles.footerItem}>⚙️</Text>
@@ -268,70 +306,41 @@ export default function AddExpenseScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: '700' },
 
-  themeSwitch: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
+  themeSwitch: { flexDirection: 'row', borderWidth: 1, borderRadius: 20 },
+  themeOption: { paddingHorizontal: 12, paddingVertical: 6 },
+  themeActive: { backgroundColor: '#e5e7eb' },
 
-  themeOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-
-  themeActive: {
-    backgroundColor: '#e5e7eb',
-  },
-
-  card: {
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 18,
-  },
-
+  card: { marginTop: 20, padding: 16, borderRadius: 18, position: 'relative' },
   balance: { fontSize: 26, fontWeight: '700', marginTop: 4 },
 
-  accountItem: {
+  deleteBtn: { position: 'absolute', right: 16, top: 16 },
+  deleteText: { fontSize: 18 },
+
+  dropdown: { marginTop: 12, borderTopWidth: 1 },
+  dropdownItem: {
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
 
   expense: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 14,
+    padding: 16,
     borderRadius: 16,
-    marginBottom: 10,
+    marginBottom: 12,
   },
 
   category: { fontSize: 16, fontWeight: '600' },
-
   amount: { fontWeight: '800', color: '#ef4444' },
 
-  fabContainer: {
-    position: 'absolute',
-    bottom: 80,
-    right: 16,
-    gap: 10,
-  },
-
-  fab: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 24,
-  },
-
+  fabContainer: { position: 'absolute', bottom: 80, right: 16, gap: 10 },
+  fab: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24 },
   fabText: { color: '#fff', fontWeight: '700' },
 
   footer: {
@@ -364,20 +373,15 @@ const styles = StyleSheet.create({
   },
 
   modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
+  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, marginBottom: 10 },
 
-  input: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-  },
-
+  modalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  cancelBtn: { padding: 12 },
   primaryBtn: {
     backgroundColor: '#2563eb',
     padding: 12,
     borderRadius: 10,
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
 
   btnText: { color: '#fff', fontWeight: '700' },
