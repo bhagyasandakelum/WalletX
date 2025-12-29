@@ -9,8 +9,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Svg, { G, Circle } from 'react-native-svg';
 
-/* ---------------- MOCK SHARED DATA ---------------- */
-/* (Later you can move this to Context or store) */
+/* ---------------- MOCK DATA ---------------- */
 
 const ACCOUNTS = [
   { id: 1, name: 'Cash', balance: 1200 },
@@ -32,15 +31,36 @@ const COLORS = ['#67e8f9', '#38bdf8', '#0ea5e9', '#0284c7'];
 export default function StatsScreen() {
   const navigation = useNavigation();
 
+  /* ---------------- STATE ---------------- */
+  const [themeMode, setThemeMode] = useState('light');
   const [selectedAccount, setSelectedAccount] = useState(ACCOUNTS[0]);
   const [showAccounts, setShowAccounts] = useState(false);
   const [range, setRange] = useState('DAY');
 
+  /* ---------------- THEME ---------------- */
+  const theme =
+    themeMode === 'dark'
+      ? {
+          bg: '#0b1220',
+          card: '#111827',
+          text: '#f9fafb',
+          sub: '#9ca3af',
+          border: '#1f2937',
+        }
+      : {
+          bg: '#f1f5f9',
+          card: '#ffffff',
+          text: '#0f172a',
+          sub: '#64748b',
+          border: '#e5e7eb',
+        };
+
   /* ---------------- FILTER EXPENSES ---------------- */
 
-  const filteredExpenses = useMemo(() => {
-    return EXPENSES.filter(e => e.accountId === selectedAccount.id);
-  }, [selectedAccount]);
+  const filteredExpenses = useMemo(
+    () => EXPENSES.filter(e => e.accountId === selectedAccount.id),
+    [selectedAccount]
+  );
 
   const total = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -54,8 +74,6 @@ export default function StatsScreen() {
     const slice = {
       angle,
       color: COLORS[index % COLORS.length],
-      label: item.title,
-      value: percent,
       startAngle: cumulativeAngle,
     };
     cumulativeAngle += angle;
@@ -65,23 +83,47 @@ export default function StatsScreen() {
   /* ---------------- UI ---------------- */
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* ---------- HEADER ---------- */}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* ---------- HEADER (SAME AS AddExpenseScreen) ---------- */}
       <View style={styles.header}>
-        <Text style={styles.title}>WalletX</Text>
+        <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
+
+        <View style={[styles.themeSwitch, { borderColor: theme.border }]}>
+          <Pressable
+            style={[
+              styles.themeOption,
+              themeMode === 'light' && styles.themeActive,
+            ]}
+            onPress={() => setThemeMode('light')}
+          >
+            <Text>☀️</Text>
+          </Pressable>
+
+          <Pressable
+            style={[
+              styles.themeOption,
+              themeMode === 'dark' && styles.themeActive,
+            ]}
+            onPress={() => setThemeMode('dark')}
+          >
+            <Text>🌙</Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* ---------- ACCOUNT CARD ---------- */}
       <Pressable
-        style={styles.card}
+        style={[styles.card, { backgroundColor: theme.card }]}
         onPress={() => setShowAccounts(!showAccounts)}
       >
-        <Text style={styles.sub}>Local balance</Text>
-        <Text style={styles.balance}>${selectedAccount.balance}</Text>
-        <Text style={styles.arrow}>⌄</Text>
+        <Text style={{ color: theme.sub }}>Local balance</Text>
+        <Text style={[styles.balance, { color: theme.text }]}>
+          ${selectedAccount.balance}
+        </Text>
+        <Text style={[styles.arrow, { color: theme.sub }]}>⌄</Text>
 
         {showAccounts && (
-          <View style={styles.dropdown}>
+          <View style={[styles.dropdown, { borderColor: theme.border }]}>
             {ACCOUNTS.filter(a => a.id !== selectedAccount.id).map(acc => (
               <Pressable
                 key={acc.id}
@@ -91,8 +133,10 @@ export default function StatsScreen() {
                   setShowAccounts(false);
                 }}
               >
-                <Text style={styles.dropdownText}>{acc.name}</Text>
-                <Text>${acc.balance}</Text>
+                <Text style={{ color: theme.text, fontWeight: '600' }}>
+                  {acc.name}
+                </Text>
+                <Text style={{ color: theme.sub }}>${acc.balance}</Text>
               </Pressable>
             ))}
           </View>
@@ -103,7 +147,13 @@ export default function StatsScreen() {
       <View style={styles.rangeRow}>
         {['DAY', 'WEEK', 'MONTH', 'YEAR'].map(r => (
           <Pressable key={r} onPress={() => setRange(r)}>
-            <Text style={[styles.rangeBtn, range === r && styles.rangeActive]}>
+            <Text
+              style={[
+                styles.rangeBtn,
+                { color: range === r ? theme.text : theme.sub },
+                range === r && styles.rangeActive,
+              ]}
+            >
               {r}
             </Text>
           </Pressable>
@@ -131,8 +181,8 @@ export default function StatsScreen() {
         </Svg>
 
         <View style={styles.center}>
-          <Text style={styles.total}>${total}</Text>
-          <Text style={styles.centerSub}>Total</Text>
+          <Text style={[styles.total, { color: theme.text }]}>${total}</Text>
+          <Text style={{ color: theme.sub }}>Total</Text>
         </View>
       </View>
 
@@ -154,26 +204,45 @@ export default function StatsScreen() {
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: '#f8fafc' },
+  container: { flex: 1, padding: 16 },
 
-  header: { alignItems: 'center', marginBottom: 10 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
   title: { fontSize: 22, fontWeight: '700' },
 
+  themeSwitch: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+
+  themeOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+
+  themeActive: {
+    backgroundColor: '#e5e7eb',
+  },
+
   card: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 16,
     marginTop: 16,
   },
 
-  sub: { color: '#64748b' },
   balance: { fontSize: 26, fontWeight: '700', marginTop: 4 },
+
   arrow: { position: 'absolute', right: 16, top: 20, fontSize: 18 },
 
   dropdown: {
     marginTop: 12,
     borderTopWidth: 1,
-    borderColor: '#e5e7eb',
   },
 
   dropdownItem: {
@@ -182,16 +251,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  dropdownText: { fontWeight: '600' },
-
   rangeRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginVertical: 20,
   },
 
-  rangeBtn: { color: '#64748b', fontWeight: '600' },
-  rangeActive: { color: '#0f172a', fontWeight: '800' },
+  rangeBtn: { fontWeight: '600' },
+  rangeActive: { fontWeight: '800' },
 
   chartWrap: {
     alignItems: 'center',
@@ -205,7 +272,6 @@ const styles = StyleSheet.create({
   },
 
   total: { fontSize: 22, fontWeight: '800' },
-  centerSub: { fontSize: 12, color: '#64748b' },
 
   footer: {
     position: 'absolute',
