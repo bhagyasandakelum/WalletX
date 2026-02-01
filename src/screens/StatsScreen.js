@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,21 +6,9 @@ import {
   Pressable,
   SafeAreaView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Svg, { G, Circle } from 'react-native-svg';
-
-/* ---------------- MOCK DATA ---------------- */
-
-const ACCOUNTS = [
-  { id: 1, name: 'Cash', balance: 1200 },
-  { id: 2, name: 'Bank', balance: 5000 },
-];
-
-const EXPENSES = [
-  { id: 1, title: 'Food', amount: 300, date: new Date(), accountId: 1 },
-  { id: 2, title: 'Transport', amount: 150, date: new Date(), accountId: 1 },
-  { id: 3, title: 'Shopping', amount: 600, date: new Date(), accountId: 2 },
-];
+import { getAccounts, getExpensesByAccount } from '../services/expenseService';
 
 /* ---------------- CHART CONSTANTS ---------------- */
 
@@ -33,43 +21,111 @@ export default function StatsScreen() {
 
   /* ---------------- STATE ---------------- */
   const [themeMode, setThemeMode] = useState('light');
-  const [selectedAccount, setSelectedAccount] = useState(ACCOUNTS[0]);
   const [showAccounts, setShowAccounts] = useState(false);
   const [range, setRange] = useState('DAY');
+
+  // DB Data
+  const [accounts, setAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [expenses, setExpenses] = useState([]);
 
   /* ---------------- THEME ---------------- */
   const theme =
     themeMode === 'dark'
       ? {
-          bg: '#0b1220',
-          card: '#111827',
-          text: '#f9fafb',
-          sub: '#9ca3af',
-          border: '#1f2937',
-        }
+        bg: '#0b1220',
+        card: '#111827',
+        text: '#f9fafb',
+        sub: '#9ca3af',
+        border: '#1f2937',
+      }
       : {
-          bg: '#f1f5f9',
-          card: '#ffffff',
-          text: '#0f172a',
-          sub: '#64748b',
-          border: '#e5e7eb',
-        };
+        bg: '#f1f5f9',
+        card: '#ffffff',
+        text: '#0f172a',
+        sub: '#64748b',
+        border: '#e5e7eb',
+      };
 
-  /* ---------------- FILTER EXPENSES ---------------- */
+  /* ---------------- DATA LOADING ---------------- */
+  const loadAccounts = useCallback(async () => {
+    try {
+      const data = await getAccounts();
+      setAccounts(data);
+      if (data.length > 0) {
+        if (selectedAccount) {
+          const stillExists = data.find(a => a.id === selectedAccount.id);
+          if (stillExists) {
+            setSelectedAccount(stillExists);
+            return;
+          }
+        }
+        setSelectedAccount(data[0]);
+      } else {
+        setSelectedAccount(null);
+      }
+    } catch (e) {
+      console.error('Failed to load accounts in stats', e);
+    }
+  }, [selectedAccount]);
 
-  const filteredExpenses = useMemo(
-    () => EXPENSES.filter(e => e.accountId === selectedAccount.id),
-    [selectedAccount]
+  const loadExpenses = useCallback(async () => {
+    if (!selectedAccount) {
+      setExpenses([]);
+      return;
+    }
+    try {
+      const data = await getExpensesByAccount(selectedAccount.id);
+      const parsed = data.map(e => ({
+        ...e,
+        date: new Date(e.date)
+      }));
+      setExpenses(parsed);
+    } catch (e) {
+      console.error('Failed to load expenses in stats', e);
+    }
+  }, [selectedAccount]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAccounts();
+    }, [])
   );
 
-  const total = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  useEffect(() => {
+    loadExpenses();
+  }, [selectedAccount, loadExpenses]);
 
-  /* ---------------- PIE CALC ---------------- */
+  /* ---------------- CALCULATIONS ---------------- */
+
+  const expensesToShow = useMemo(() => {
+    const now = new Date();
+    return expenses.filter(e => {
+      const d = e.date;
+      if (range === 'DAY') {
+        return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      if (range === 'WEEK') {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(now.getDate() - 7);
+        return d >= oneWeekAgo;
+      }
+      if (range === 'MONTH') {
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }
+      if (range === 'YEAR') {
+        return d.getFullYear() === now.getFullYear();
+      }
+      return true;
+    });
+  }, [expenses, range]);
+
+  const total = expensesToShow.reduce((sum, e) => sum + e.amount, 0);
 
   let cumulativeAngle = 0;
 
-  const slices = filteredExpenses.map((item, index) => {
-    const percent = item.amount / total;
+  const slices = expensesToShow.map((item, index) => {
+    const percent = total === 0 ? 0 : item.amount / total;
     const angle = percent * 360;
     const slice = {
       angle,
@@ -118,13 +174,13 @@ export default function StatsScreen() {
       >
         <Text style={{ color: theme.sub }}>Local balance</Text>
         <Text style={[styles.balance, { color: theme.text }]}>
-          ${selectedAccount.balance}
+          ${selectedAccount ? selectedAccount.balance : '0.00'}
         </Text>
         <Text style={[styles.arrow, { color: theme.sub }]}>⌄</Text>
 
         {showAccounts && (
           <View style={[styles.dropdown, { borderColor: theme.border }]}>
-            {ACCOUNTS.filter(a => a.id !== selectedAccount.id).map(acc => (
+            {accounts.filter(a => selectedAccount ? a.id !== selectedAccount.id : true).map(acc => (
               <Pressable
                 key={acc.id}
                 style={styles.dropdownItem}
@@ -164,7 +220,7 @@ export default function StatsScreen() {
       <View style={styles.chartWrap}>
         <Svg width={200} height={200}>
           <G rotation="-90" origin="100, 100">
-            {slices.map((slice, index) => (
+            {slices.length > 0 ? slices.map((slice, index) => (
               <Circle
                 key={index}
                 cx="100"
@@ -176,12 +232,16 @@ export default function StatsScreen() {
                 strokeDashoffset={slice.startAngle * -2.5}
                 fill="none"
               />
-            ))}
+            )) : (
+              <Circle
+                cx="100" cy="100" r={RADIUS} stroke={theme.border} strokeWidth={STROKE} fill="none"
+              />
+            )}
           </G>
         </Svg>
 
         <View style={styles.center}>
-          <Text style={[styles.total, { color: theme.text }]}>${total}</Text>
+          <Text style={[styles.total, { color: theme.text }]}>${total.toFixed(2)}</Text>
           <Text style={{ color: theme.sub }}>Total</Text>
         </View>
       </View>

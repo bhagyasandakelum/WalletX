@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,14 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {
+  getAccounts,
+  addAccount as addAccountService,
+  deleteAccount as deleteAccountService,
+  addExpense as addExpenseService,
+  getExpensesByAccount,
+} from '../services/expenseService';
 
 export default function AddExpenseScreen() {
   const navigation = useNavigation();
@@ -21,17 +28,10 @@ export default function AddExpenseScreen() {
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
 
-  const [accounts, setAccounts] = useState([
-    { id: 1, name: 'Cash', balance: 1200 },
-    { id: 2, name: 'Bank', balance: 5000 },
-  ]);
-
-  const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
-
-  const [expenses, setExpenses] = useState([
-    { id: 1, title: 'Food', amount: 300, date: new Date(), accountId: 1 },
-    { id: 2, title: 'Transport', amount: 150, date: new Date(), accountId: 1 },
-  ]);
+  // Data from DB
+  const [accounts, setAccounts] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   /* ---------------- FORM STATE ---------------- */
   const [newAccountName, setNewAccountName] = useState('');
@@ -43,90 +43,129 @@ export default function AddExpenseScreen() {
   const theme =
     themeMode === 'dark'
       ? {
-          bg: '#0b1220',
-          card: '#111827',
-          text: '#f9fafb',
-          sub: '#9ca3af',
-          border: '#1f2937',
-        }
+        bg: '#0b1220',
+        card: '#111827',
+        text: '#f9fafb',
+        sub: '#9ca3af',
+        border: '#1f2937',
+      }
       : {
-          bg: '#f1f5f9',
-          card: '#ffffff',
-          text: '#0f172a',
-          sub: '#64748b',
-          border: '#e5e7eb',
-        };
+        bg: '#f1f5f9',
+        card: '#ffffff',
+        text: '#0f172a',
+        sub: '#64748b',
+        border: '#e5e7eb',
+      };
+
+  /* ---------------- DATA LOADING ---------------- */
+  const loadAccounts = useCallback(async () => {
+    try {
+      const data = await getAccounts();
+      setAccounts(data);
+      // Auto-select first account if none selected or if selected was deleted
+      if (data.length > 0) {
+        // If we have a selected account, check if it still exists
+        if (selectedAccount) {
+          const stillExists = data.find(a => a.id === selectedAccount.id);
+          if (stillExists) {
+            setSelectedAccount(stillExists); // Update balance
+            return;
+          }
+        }
+        setSelectedAccount(data[0]);
+      } else {
+        setSelectedAccount(null);
+      }
+    } catch (e) {
+      console.error('Failed to load accounts', e);
+    }
+  }, [selectedAccount]);
+
+  const loadExpenses = useCallback(async () => {
+    if (!selectedAccount) {
+      setExpenses([]);
+      return;
+    }
+    try {
+      const data = await getExpensesByAccount(selectedAccount.id);
+      // SQLite returns strings for dates usually, we need to parse them for display if we use Date methods
+      const parsed = data.map(e => ({
+        ...e,
+        date: new Date(e.date)
+      }));
+      setExpenses(parsed);
+    } catch (e) {
+      console.error('Failed to load expenses', e);
+    }
+  }, [selectedAccount]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAccounts();
+    }, [])
+  );
+
+  useEffect(() => {
+    loadExpenses();
+  }, [selectedAccount, loadExpenses]);
+
 
   /* ---------------- HELPERS ---------------- */
-  const addAccount = () => {
+  const handleAddAccount = async () => {
     if (!newAccountName || !newAccountBalance) return;
 
-    const account = {
-      id: Date.now(),
-      name: newAccountName,
-      balance: Number(newAccountBalance),
-    };
-
-    setAccounts(prev => [...prev, account]);
-    setSelectedAccount(account);
-    setNewAccountName('');
-    setNewAccountBalance('');
-    setShowAddAccount(false);
+    try {
+      await addAccountService(newAccountName, Number(newAccountBalance));
+      await loadAccounts();
+      setNewAccountName('');
+      setNewAccountBalance('');
+      setShowAddAccount(false);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not add account');
+    }
   };
 
-  const addExpense = () => {
-    if (!expenseTitle || !expenseAmount) return;
+  const handleAddExpense = async () => {
+    if (!expenseTitle || !expenseAmount || !selectedAccount) return;
 
-    const amount = Number(expenseAmount);
-
-    const expense = {
-      id: Date.now(),
-      title: expenseTitle,
-      amount,
-      date: new Date(),
-      accountId: selectedAccount.id,
-    };
-
-    setExpenses(prev => [expense, ...prev]);
-
-    // ✅ Always deduct — balance can go negative
-    setAccounts(prev =>
-      prev.map(acc =>
-        acc.id === selectedAccount.id
-          ? { ...acc, balance: acc.balance - amount }
-          : acc
-      )
-    );
-
-    setExpenseTitle('');
-    setExpenseAmount('');
-    setShowAddExpense(false);
+    try {
+      await addExpenseService(expenseTitle, Number(expenseAmount), selectedAccount.id);
+      await loadAccounts(); // Update balance
+      await loadExpenses(); // Update list
+      setExpenseTitle('');
+      setExpenseAmount('');
+      setShowAddExpense(false);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not add expense');
+    }
   };
 
-  const deleteAccount = acc => {
+  const handleDeleteAccount = (acc) => {
     Alert.alert(
       'Delete Account',
-      'If deleted, all expenses will be lost. This action cannot be undone.',
+      'If deleted, all expenses will be lost. Unrecoverable.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            setAccounts(prev => prev.filter(a => a.id !== acc.id));
-            setExpenses(prev => prev.filter(e => e.accountId !== acc.id));
-            setSelectedAccount(accounts[0]);
-            setShowAccounts(false);
+          onPress: async () => {
+            try {
+              await deleteAccountService(acc.id);
+              await loadAccounts();
+              setShowAccounts(false);
+            } catch (e) {
+              console.error(e);
+              Alert.alert('Error', 'Could not delete account');
+            }
           },
         },
       ]
     );
   };
 
-  const filteredExpenses = useMemo(
-    () => expenses.filter(e => e.accountId === selectedAccount.id),
-    [expenses, selectedAccount]
-  );
 
   /* ---------------- UI ---------------- */
   return (
@@ -161,18 +200,20 @@ export default function AddExpenseScreen() {
       {/* ---------- ACCOUNT CARD ---------- */}
       <View style={[styles.card, { backgroundColor: theme.card }]}>
         <Pressable onPress={() => setShowAccounts(!showAccounts)}>
-          <Text style={{ color: theme.sub }}>{selectedAccount.name}</Text>
+          <Text style={{ color: theme.sub }}>{selectedAccount ? selectedAccount.name : 'No Account'}</Text>
           <Text style={[styles.balance, { color: theme.text }]}>
-            ${selectedAccount.balance}
+            ${selectedAccount ? selectedAccount.balance : '0.00'}
           </Text>
         </Pressable>
 
-        <Pressable
-          style={styles.deleteBtn}
-          onPress={() => deleteAccount(selectedAccount)}
-        >
-          <Text style={styles.deleteText}>🗑️</Text>
-        </Pressable>
+        {selectedAccount && (
+          <Pressable
+            style={styles.deleteBtn}
+            onPress={() => handleDeleteAccount(selectedAccount)}
+          >
+            <Text style={styles.deleteText}>🗑️</Text>
+          </Pressable>
+        )}
 
         {showAccounts && (
           <View style={[styles.dropdown, { borderColor: theme.border }]}>
@@ -195,9 +236,10 @@ export default function AddExpenseScreen() {
 
       {/* ---------- EXPENSE LIST ---------- */}
       <FlatList
-        data={filteredExpenses}
+        data={expenses}
         keyExtractor={item => item.id.toString()}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: 10 }}
+        ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: theme.sub }}>No expenses found</Text>}
         renderItem={({ item }) => (
           <View style={[styles.expense, { backgroundColor: theme.card }]}>
             <View>
@@ -205,7 +247,7 @@ export default function AddExpenseScreen() {
                 {item.title}
               </Text>
               <Text style={{ color: theme.sub }}>
-                {item.date.toDateString()}
+                {item.date ? item.date.toDateString() : ''}
               </Text>
             </View>
             <Text style={styles.amount}>-${item.amount}</Text>
@@ -224,7 +266,7 @@ export default function AddExpenseScreen() {
 
         <Pressable
           style={[styles.fab, { backgroundColor: '#ef4444' }]}
-          onPress={() => setShowAddExpense(true)}
+          onPress={() => selectedAccount ? setShowAddExpense(true) : Alert.alert('Error', 'Please create an account first')}
         >
           <Text style={styles.fabText}>＋ Expense</Text>
         </Pressable>
@@ -252,7 +294,7 @@ export default function AddExpenseScreen() {
               <Pressable style={styles.cancelBtn} onPress={() => setShowAddAccount(false)}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.primaryBtn} onPress={addAccount}>
+              <Pressable style={styles.primaryBtn} onPress={handleAddAccount}>
                 <Text style={styles.btnText}>Add</Text>
               </Pressable>
             </View>
@@ -282,7 +324,7 @@ export default function AddExpenseScreen() {
               <Pressable style={styles.cancelBtn} onPress={() => setShowAddExpense(false)}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.primaryBtn} onPress={addExpense}>
+              <Pressable style={styles.primaryBtn} onPress={handleAddExpense}>
                 <Text style={styles.btnText}>Add</Text>
               </Pressable>
             </View>
