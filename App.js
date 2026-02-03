@@ -6,6 +6,7 @@ import { initDB } from './src/database/db';
 
 import AddExpenseScreen from './src/screens/AddExpenseScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import SplashScreen from './src/screens/SplashScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,17 +14,17 @@ export default function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initDB()
+    // Run DB init and a minimum timer in parallel
+    Promise.all([
+      initDB(),
+      new Promise(resolve => setTimeout(resolve, 3000)) // Show splash for at least 3 seconds
+    ])
       .then(() => setReady(true))
-      .catch(err => console.log(err));
+      .catch(err => console.log('Initialization error:', err));
   }, []);
 
   if (!ready) {
-    return (
-      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
-        <Text>Initializing database...</Text>
-      </View>
-    );
+    return <SplashScreen />;
   }
 
   return (

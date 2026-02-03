@@ -20,7 +20,6 @@ export default function StatsScreen() {
   const navigation = useNavigation();
 
   /* ---------------- STATE ---------------- */
-  const [themeMode, setThemeMode] = useState('light');
   const [showAccounts, setShowAccounts] = useState(false);
   const [range, setRange] = useState('DAY');
 
@@ -30,22 +29,14 @@ export default function StatsScreen() {
   const [expenses, setExpenses] = useState([]);
 
   /* ---------------- THEME ---------------- */
-  const theme =
-    themeMode === 'dark'
-      ? {
-        bg: '#0b1220',
-        card: '#111827',
-        text: '#f9fafb',
-        sub: '#9ca3af',
-        border: '#1f2937',
-      }
-      : {
-        bg: '#f1f5f9',
-        card: '#ffffff',
-        text: '#0f172a',
-        sub: '#64748b',
-        border: '#e5e7eb',
-      };
+  const theme = {
+    bg: '#F5F7FA',
+    card: '#FFFFFF',
+    text: '#1F2937',
+    sub: '#6B7280',
+    border: '#E5E7EB',
+    accent: '#00D09C',
+  };
 
   /* ---------------- DATA LOADING ---------------- */
   const loadAccounts = useCallback(async () => {
@@ -142,29 +133,7 @@ export default function StatsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* ---------- HEADER (SAME AS AddExpenseScreen) ---------- */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
-
-        <View style={[styles.themeSwitch, { borderColor: theme.border }]}>
-          <Pressable
-            style={[
-              styles.themeOption,
-              themeMode === 'light' && styles.themeActive,
-            ]}
-            onPress={() => setThemeMode('light')}
-          >
-            <Text>☀️</Text>
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.themeOption,
-              themeMode === 'dark' && styles.themeActive,
-            ]}
-            onPress={() => setThemeMode('dark')}
-          >
-            <Text>🌙</Text>
-          </Pressable>
-        </View>
+        <Text style={[styles.title, { color: theme.accent }]}>WalletX</Text>
       </View>
 
       {/* ---------- ACCOUNT CARD ---------- */}

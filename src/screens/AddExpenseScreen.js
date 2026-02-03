@@ -23,7 +23,6 @@ export default function AddExpenseScreen() {
   const navigation = useNavigation();
 
   /* ---------------- STATE ---------------- */
-  const [themeMode, setThemeMode] = useState('light');
   const [showAccounts, setShowAccounts] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -39,23 +38,15 @@ export default function AddExpenseScreen() {
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
 
-  /* ---------------- THEME ---------------- */
-  const theme =
-    themeMode === 'dark'
-      ? {
-        bg: '#0b1220',
-        card: '#111827',
-        text: '#f9fafb',
-        sub: '#9ca3af',
-        border: '#1f2937',
-      }
-      : {
-        bg: '#f1f5f9',
-        card: '#ffffff',
-        text: '#0f172a',
-        sub: '#64748b',
-        border: '#e5e7eb',
-      };
+  /* ---------------- THEME (Light Mode Enforced) ---------------- */
+  const theme = {
+    bg: '#F5F7FA', // Light gray background
+    card: '#FFFFFF',
+    text: '#1F2937', // Dark gray text
+    sub: '#6B7280', // Medium gray for subtitles
+    border: '#E5E7EB',
+    accent: '#00D09C', // Brand color
+  };
 
   /* ---------------- DATA LOADING ---------------- */
   const loadAccounts = useCallback(async () => {
@@ -172,29 +163,7 @@ export default function AddExpenseScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* ---------- HEADER ---------- */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>WalletX</Text>
-
-        <View style={[styles.themeSwitch, { borderColor: theme.border }]}>
-          <Pressable
-            style={[
-              styles.themeOption,
-              themeMode === 'light' && styles.themeActive,
-            ]}
-            onPress={() => setThemeMode('light')}
-          >
-            <Text>☀️</Text>
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.themeOption,
-              themeMode === 'dark' && styles.themeActive,
-            ]}
-            onPress={() => setThemeMode('dark')}
-          >
-            <Text>🌙</Text>
-          </Pressable>
-        </View>
+        <Text style={[styles.title, { color: theme.accent }]}>WalletX</Text>
       </View>
 
       {/* ---------- ACCOUNT CARD ---------- */}
@@ -348,12 +317,8 @@ export default function AddExpenseScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700' },
-
-  themeSwitch: { flexDirection: 'row', borderWidth: 1, borderRadius: 20 },
-  themeOption: { paddingHorizontal: 12, paddingVertical: 6 },
-  themeActive: { backgroundColor: '#e5e7eb' },
+  header: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 10 },
+  title: { fontSize: 24, fontWeight: '700', letterSpacing: 1 },
 
   card: { marginTop: 20, padding: 16, borderRadius: 18, position: 'relative' },
   balance: { fontSize: 26, fontWeight: '700', marginTop: 4 },
@@ -382,7 +347,7 @@ const styles = StyleSheet.create({
   amount: { fontWeight: '800', color: '#ef4444' },
 
   fabContainer: { position: 'absolute', bottom: 80, right: 16, gap: 10 },
-  fab: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24 },
+  fab: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, elevation: 4 },
   fabText: { color: '#fff', fontWeight: '700' },
 
   footer: {
@@ -394,7 +359,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#FFFFFF', // Light footer
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
 
   footerItem: { fontSize: 22 },
@@ -408,19 +375,32 @@ const styles = StyleSheet.create({
   },
 
   modal: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     padding: 20,
     borderRadius: 16,
     width: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 10, marginBottom: 10 },
+  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10, color: '#1F2937' },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    color: '#1F2937',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10
+  },
 
   modalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   cancelBtn: { padding: 12 },
   primaryBtn: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#00D09C',
     padding: 12,
     borderRadius: 10,
     paddingHorizontal: 20,
