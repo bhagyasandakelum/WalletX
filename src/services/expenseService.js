@@ -19,11 +19,28 @@ export const addAccount = async (name, balance) => {
 
 export const deleteAccount = async (id) => {
   const db = await getDBConnection();
-  // Using execAsync for multiple statements in a transaction-like block isn't quite the same as transaction object,
-  // but for simple deletes its often okay. Ideally use:
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM expenses WHERE accountId = ?', id);
     await db.runAsync('DELETE FROM accounts WHERE id = ?', id);
+  });
+};
+
+export const deleteExpense = async (id) => {
+  const db = await getDBConnection();
+  await db.withTransactionAsync(async () => {
+    // Get expense details first
+    const expense = await db.getFirstAsync('SELECT * FROM expenses WHERE id = ?', id);
+    if (!expense) return;
+
+    // Refund the balance
+    await db.runAsync(
+      'UPDATE accounts SET balance = balance + ? WHERE id = ?',
+      expense.amount,
+      expense.accountId
+    );
+
+    // Delete the expense
+    await db.runAsync('DELETE FROM expenses WHERE id = ?', id);
   });
 };
 

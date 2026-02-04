@@ -5,19 +5,27 @@ import {
   StyleSheet,
   Pressable,
   FlatList,
-  SafeAreaView,
   TextInput,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { BlurView } from 'expo-blur'; // Assuming we might want to use it later, but stick to View for now if package not installed. Actually I checked and didn't see expo-blur. I'll stick to styling.
+
 import {
   getAccounts,
   addAccount as addAccountService,
   deleteAccount as deleteAccountService,
   addExpense as addExpenseService,
+  deleteExpense as deleteExpenseService,
   getExpensesByAccount,
 } from '../services/expenseService';
+
+import ScreenWrapper from '../components/ScreenWrapper';
+import Card from '../components/Card';
+import AppButton from '../components/AppButton';
+import ExpenseItem from '../components/ExpenseItem';
 
 export default function AddExpenseScreen() {
   const navigation = useNavigation();
@@ -38,28 +46,16 @@ export default function AddExpenseScreen() {
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
 
-  /* ---------------- THEME (Light Mode Enforced) ---------------- */
-  const theme = {
-    bg: '#F5F7FA', // Light gray background
-    card: '#FFFFFF',
-    text: '#1F2937', // Dark gray text
-    sub: '#6B7280', // Medium gray for subtitles
-    border: '#E5E7EB',
-    accent: '#00D09C', // Brand color
-  };
-
   /* ---------------- DATA LOADING ---------------- */
   const loadAccounts = useCallback(async () => {
     try {
       const data = await getAccounts();
       setAccounts(data);
-      // Auto-select first account if none selected or if selected was deleted
       if (data.length > 0) {
-        // If we have a selected account, check if it still exists
         if (selectedAccount) {
           const stillExists = data.find(a => a.id === selectedAccount.id);
           if (stillExists) {
-            setSelectedAccount(stillExists); // Update balance
+            setSelectedAccount(stillExists);
             return;
           }
         }
@@ -79,7 +75,6 @@ export default function AddExpenseScreen() {
     }
     try {
       const data = await getExpensesByAccount(selectedAccount.id);
-      // SQLite returns strings for dates usually, we need to parse them for display if we use Date methods
       const parsed = data.map(e => ({
         ...e,
         date: new Date(e.date)
@@ -100,11 +95,9 @@ export default function AddExpenseScreen() {
     loadExpenses();
   }, [selectedAccount, loadExpenses]);
 
-
-  /* ---------------- HELPERS ---------------- */
+  /* ---------------- HANDLERS ---------------- */
   const handleAddAccount = async () => {
     if (!newAccountName || !newAccountBalance) return;
-
     try {
       await addAccountService(newAccountName, Number(newAccountBalance));
       await loadAccounts();
@@ -119,11 +112,10 @@ export default function AddExpenseScreen() {
 
   const handleAddExpense = async () => {
     if (!expenseTitle || !expenseAmount || !selectedAccount) return;
-
     try {
       await addExpenseService(expenseTitle, Number(expenseAmount), selectedAccount.id);
-      await loadAccounts(); // Update balance
-      await loadExpenses(); // Update list
+      await loadAccounts();
+      await loadExpenses();
       setExpenseTitle('');
       setExpenseAmount('');
       setShowAddExpense(false);
@@ -136,7 +128,7 @@ export default function AddExpenseScreen() {
   const handleDeleteAccount = (acc) => {
     Alert.alert(
       'Delete Account',
-      'If deleted, all expenses will be lost. Unrecoverable.',
+      'This will delete the account and ALL associated expenses permanently.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -145,8 +137,8 @@ export default function AddExpenseScreen() {
           onPress: async () => {
             try {
               await deleteAccountService(acc.id);
+              setSelectedAccount(null);
               await loadAccounts();
-              setShowAccounts(false);
             } catch (e) {
               console.error(e);
               Alert.alert('Error', 'Could not delete account');
@@ -157,97 +149,138 @@ export default function AddExpenseScreen() {
     );
   };
 
+  const handleDeleteExpense = async (id) => {
+    try {
+      await deleteExpenseService(id);
+      await loadAccounts(); // Balance changes on delete
+      await loadExpenses();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not delete expense');
+    }
+  };
 
   /* ---------------- UI ---------------- */
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* ---------- HEADER ---------- */}
+    <ScreenWrapper>
+      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.accent }]}>WalletX</Text>
+        <View>
+          <Text style={styles.greeting}>Hello,</Text>
+          <Text style={styles.appName}>WalletX</Text>
+        </View>
+        <Pressable onPress={() => { }} style={styles.profileBtn}>
+          <Text style={styles.profileIcon}>👤</Text>
+        </Pressable>
       </View>
 
-      {/* ---------- ACCOUNT CARD ---------- */}
-      <View style={[styles.card, { backgroundColor: theme.card }]}>
-        <Pressable onPress={() => setShowAccounts(!showAccounts)}>
-          <Text style={{ color: theme.sub }}>{selectedAccount ? selectedAccount.name : 'No Account'}</Text>
-          <Text style={[styles.balance, { color: theme.text }]}>
-            ${selectedAccount ? selectedAccount.balance : '0.00'}
-          </Text>
-        </Pressable>
-
-        {selectedAccount && (
-          <Pressable
-            style={styles.deleteBtn}
-            onPress={() => handleDeleteAccount(selectedAccount)}
-          >
-            <Text style={styles.deleteText}>🗑️</Text>
+      {/* ACCOUNT SECTION */}
+      <Card style={styles.accountCard}>
+        <View style={styles.accountHeader}>
+          <Pressable onPress={() => setShowAccounts(!showAccounts)} style={styles.accountSelector}>
+            <Text style={styles.accountLabel}>Current Balance</Text>
+            <View style={styles.accountNameRow}>
+              <Text style={styles.accountName}>
+                {selectedAccount ? selectedAccount.name : 'No Account'}
+              </Text>
+              <Text style={styles.arrow}>▼</Text>
+            </View>
           </Pressable>
-        )}
+          {selectedAccount && (
+            <Pressable style={styles.deleteAccountBtn} onPress={() => handleDeleteAccount(selectedAccount)}>
+              <Text style={styles.trashIcon}>🗑️</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <Text style={styles.balance}>
+          ${selectedAccount ? selectedAccount.balance.toFixed(2) : '0.00'}
+        </Text>
 
         {showAccounts && (
-          <View style={[styles.dropdown, { borderColor: theme.border }]}>
+          <View style={styles.accountDropdown}>
+            <Text style={styles.dropdownTitle}>Switch Account</Text>
             {accounts.map(acc => (
               <Pressable
                 key={acc.id}
-                style={[styles.dropdownItem, { backgroundColor: theme.bg }]}
+                style={[styles.dropdownItem, acc.id === selectedAccount?.id && styles.dropdownItemActive]}
                 onPress={() => {
                   setSelectedAccount(acc);
                   setShowAccounts(false);
                 }}
               >
-                <Text style={{ fontWeight: '700' }}>{acc.name}</Text>
-                <Text>${acc.balance}</Text>
+                <Text style={styles.dropdownItemText}>{acc.name}</Text>
+                <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
               </Pressable>
             ))}
+            <AppButton
+              title="+ New Account"
+              onPress={() => { setShowAccounts(false); setShowAddAccount(true); }}
+              style={{ marginTop: 10 }}
+              color={['#3b82f6', '#2563eb']}
+            />
           </View>
         )}
+      </Card>
+
+      {/* EXPENSES HEADER */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <Pressable onPress={() => navigation.navigate('Stats')}>
+          <Text style={styles.seeAll}>Stats ➔</Text>
+        </Pressable>
       </View>
 
-      {/* ---------- EXPENSE LIST ---------- */}
+      {/* EXPENSE LIST */}
       <FlatList
         data={expenses}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 140, paddingTop: 10 }}
-        ListEmptyComponent={<Text style={{ textAlign: 'center', marginTop: 20, color: theme.sub }}>No expenses found</Text>}
-        renderItem={({ item }) => (
-          <View style={[styles.expense, { backgroundColor: theme.card }]}>
-            <View>
-              <Text style={[styles.category, { color: theme.text }]}>
-                {item.title}
-              </Text>
-              <Text style={{ color: theme.sub }}>
-                {item.date ? item.date.toDateString() : ''}
-              </Text>
-            </View>
-            <Text style={styles.amount}>-${item.amount}</Text>
+        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No expenses yet.</Text>
+            <Text style={styles.emptySub}>Add one to get started!</Text>
           </View>
+        }
+        renderItem={({ item }) => (
+          <ExpenseItem item={item} onDelete={handleDeleteExpense} />
         )}
       />
 
-      {/* ---------- FLOAT BUTTONS ---------- */}
+      {/* FABs */}
       <View style={styles.fabContainer}>
-        <Pressable
-          style={[styles.fab, { backgroundColor: '#22c55e' }]}
-          onPress={() => setShowAddAccount(true)}
-        >
-          <Text style={styles.fabText}>＋ Account</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.fab, { backgroundColor: '#ef4444' }]}
+        <AppButton
+          title="+ Expense"
           onPress={() => selectedAccount ? setShowAddExpense(true) : Alert.alert('Error', 'Please create an account first')}
-        >
-          <Text style={styles.fabText}>＋ Expense</Text>
+          style={styles.fab}
+          color={['#00d09c', '#00dfa8']}
+        />
+      </View>
+
+      {/* FOOTER */}
+      <View style={styles.footer}>
+        <Pressable style={styles.footerItem}>
+          <Text style={[styles.footerIcon, styles.footerActive]}>🏠</Text>
+          <Text style={[styles.footerText, styles.footerTextActive]}>Home</Text>
+        </Pressable>
+        <Pressable style={styles.footerItem} onPress={() => navigation.navigate('Stats')}>
+          <Text style={styles.footerIcon}>📊</Text>
+          <Text style={styles.footerText}>Stats</Text>
+        </Pressable>
+        <Pressable style={styles.footerItem}>
+          <Text style={styles.footerIcon}>⚙️</Text>
+          <Text style={styles.footerText}>Settings</Text>
         </Pressable>
       </View>
 
-      {/* ---------- ADD ACCOUNT MODAL ---------- */}
-      <Modal visible={showAddAccount} transparent animationType="fade">
-        <View style={styles.modalWrap}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add Account</Text>
+      {/* ADD ACCOUNT MODAL */}
+      <Modal visible={showAddAccount} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>New Account</Text>
             <TextInput
-              placeholder="Account Name"
+              placeholder="Account Name (e.g., Bank)"
               style={styles.input}
               value={newAccountName}
               onChangeText={setNewAccountName}
@@ -259,25 +292,23 @@ export default function AddExpenseScreen() {
               value={newAccountBalance}
               onChangeText={setNewAccountBalance}
             />
-            <View style={styles.modalRow}>
-              <Pressable style={styles.cancelBtn} onPress={() => setShowAddAccount(false)}>
-                <Text>Cancel</Text>
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.cancelButton} onPress={() => setShowAddAccount(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.primaryBtn} onPress={handleAddAccount}>
-                <Text style={styles.btnText}>Add</Text>
-              </Pressable>
+              <AppButton title="Create Account" onPress={handleAddAccount} style={{ flex: 1 }} />
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* ---------- ADD EXPENSE MODAL ---------- */}
-      <Modal visible={showAddExpense} transparent animationType="fade">
-        <View style={styles.modalWrap}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add Expense</Text>
+      {/* ADD EXPENSE MODAL */}
+      <Modal visible={showAddExpense} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalHeader}>New Expense</Text>
             <TextInput
-              placeholder="Title"
+              placeholder="What did you buy?"
               style={styles.input}
               value={expenseTitle}
               onChangeText={setExpenseTitle}
@@ -289,122 +320,230 @@ export default function AddExpenseScreen() {
               value={expenseAmount}
               onChangeText={setExpenseAmount}
             />
-            <View style={styles.modalRow}>
-              <Pressable style={styles.cancelBtn} onPress={() => setShowAddExpense(false)}>
-                <Text>Cancel</Text>
+            <View style={styles.modalButtons}>
+              <Pressable style={styles.cancelButton} onPress={() => setShowAddExpense(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
-              <Pressable style={styles.primaryBtn} onPress={handleAddExpense}>
-                <Text style={styles.btnText}>Add</Text>
-              </Pressable>
+              <AppButton title="Add Expense" onPress={handleAddExpense} style={{ flex: 1 }} color={['#ef4444', '#f87171']} />
             </View>
           </View>
         </View>
       </Modal>
-
-      {/* ---------- FOOTER ---------- */}
-      <View style={styles.footer}>
-        <Text style={[styles.footerItem, styles.footerActive]}>🏠</Text>
-        <Text style={styles.footerItem} onPress={() => navigation.navigate('Stats')}>
-          📊
-        </Text>
-        <Text style={styles.footerItem}>⚙️</Text>
-      </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  header: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingBottom: 10 },
-  title: { fontSize: 24, fontWeight: '700', letterSpacing: 1 },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  greeting: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  profileBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  profileIcon: { fontSize: 20 },
 
-  card: { marginTop: 20, padding: 16, borderRadius: 18, position: 'relative' },
-  balance: { fontSize: 26, fontWeight: '700', marginTop: 4 },
+  accountCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 24,
+  },
+  accountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  accountLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  accountNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  accountName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  arrow: { fontSize: 12, color: '#9ca3af' },
+  deleteAccountBtn: {
+    padding: 8,
+  },
+  trashIcon: { fontSize: 16 },
+  balance: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 10,
+  },
 
-  deleteBtn: { position: 'absolute', right: 16, top: 16 },
-  deleteText: { fontSize: 18 },
-
-  dropdown: { marginTop: 12, borderTopWidth: 1 },
+  accountDropdown: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  dropdownTitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
   dropdownItem: {
-    padding: 12,
-    borderRadius: 12,
-    marginTop: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  dropdownItemActive: {
+    backgroundColor: '#f3f4f6',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '600',
+  },
+  dropdownItemBalance: {
+    fontSize: 16,
+    color: '#6b7280',
   },
 
-  expense: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  seeAll: {
+    color: '#00D09C',
+    fontWeight: '600',
   },
 
-  category: { fontSize: 16, fontWeight: '600' },
-  amount: { fontWeight: '800', color: '#ef4444' },
+  emptyState: {
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  emptySub: {
+    color: '#9ca3af',
+    marginTop: 4,
+  },
 
-  fabContainer: { position: 'absolute', bottom: 80, right: 16, gap: 10 },
-  fab: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, elevation: 4 },
-  fabText: { color: '#fff', fontWeight: '700' },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 80,
+    alignSelf: 'center',
+  },
+  fab: {
+    width: 160,
+  },
 
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
+    height: 70,
+    backgroundColor: '#fff',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF', // Light footer
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#f3f4f6',
+    paddingBottom: 10,
   },
-
-  footerItem: { fontSize: 22 },
-  footerActive: { fontWeight: '800' },
-
-  modalWrap: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
+  footerItem: {
     alignItems: 'center',
   },
-
-  modal: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 16,
-    width: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+  footerIcon: { fontSize: 24, marginBottom: 2 },
+  footerText: { fontSize: 10, color: '#9ca3af', fontWeight: '600' },
+  footerActive: {
+    color: '#00D09C',
+  },
+  footerTextActive: {
+    color: '#00D09C',
   },
 
-  modalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 10, color: '#1F2937' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 20,
+  },
   input: {
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    color: '#1F2937',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    marginBottom: 16,
+    color: '#111827',
   },
-
-  modalRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  cancelBtn: { padding: 12 },
-  primaryBtn: {
-    backgroundColor: '#00D09C',
-    padding: 12,
-    borderRadius: 10,
+  modalButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 10,
+  },
+  cancelButton: {
+    paddingVertical: 14,
     paddingHorizontal: 20,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
-
-  btnText: { color: '#fff', fontWeight: '700' },
+  cancelText: {
+    fontWeight: '600',
+    color: '#374151',
+  },
 });

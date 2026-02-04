@@ -4,11 +4,14 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  SafeAreaView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Svg, { G, Circle } from 'react-native-svg';
 import { getAccounts, getExpensesByAccount } from '../services/expenseService';
+
+import ScreenWrapper from '../components/ScreenWrapper';
+import Card from '../components/Card';
+import AppButton from '../components/AppButton';
 
 /* ---------------- CHART CONSTANTS ---------------- */
 
@@ -27,16 +30,6 @@ export default function StatsScreen() {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [expenses, setExpenses] = useState([]);
-
-  /* ---------------- THEME ---------------- */
-  const theme = {
-    bg: '#F5F7FA',
-    card: '#FFFFFF',
-    text: '#1F2937',
-    sub: '#6B7280',
-    border: '#E5E7EB',
-    accent: '#00D09C',
-  };
 
   /* ---------------- DATA LOADING ---------------- */
   const loadAccounts = useCallback(async () => {
@@ -130,190 +123,267 @@ export default function StatsScreen() {
   /* ---------------- UI ---------------- */
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* ---------- HEADER (SAME AS AddExpenseScreen) ---------- */}
+    <ScreenWrapper>
+      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.accent }]}>WalletX</Text>
+        <View>
+          <Text style={styles.headerTitle}>Overview</Text>
+          <Text style={styles.headerSub}>Spending Analysis</Text>
+        </View>
+        <Pressable style={styles.profileBtn}>
+          <Text style={styles.profileIcon}>📊</Text>
+        </Pressable>
       </View>
 
-      {/* ---------- ACCOUNT CARD ---------- */}
-      <Pressable
-        style={[styles.card, { backgroundColor: theme.card }]}
-        onPress={() => setShowAccounts(!showAccounts)}
-      >
-        <Text style={{ color: theme.sub }}>Local balance</Text>
-        <Text style={[styles.balance, { color: theme.text }]}>
-          ${selectedAccount ? selectedAccount.balance : '0.00'}
-        </Text>
-        <Text style={[styles.arrow, { color: theme.sub }]}>⌄</Text>
-
-        {showAccounts && (
-          <View style={[styles.dropdown, { borderColor: theme.border }]}>
-            {accounts.filter(a => selectedAccount ? a.id !== selectedAccount.id : true).map(acc => (
-              <Pressable
-                key={acc.id}
-                style={styles.dropdownItem}
-                onPress={() => {
-                  setSelectedAccount(acc);
-                  setShowAccounts(false);
-                }}
-              >
-                <Text style={{ color: theme.text, fontWeight: '600' }}>
-                  {acc.name}
-                </Text>
-                <Text style={{ color: theme.sub }}>${acc.balance}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-      </Pressable>
-
-      {/* ---------- RANGE FILTER ---------- */}
-      <View style={styles.rangeRow}>
+      {/* FILTER TABS */}
+      <View style={styles.rangeContainer}>
         {['DAY', 'WEEK', 'MONTH', 'YEAR'].map(r => (
-          <Pressable key={r} onPress={() => setRange(r)}>
-            <Text
-              style={[
-                styles.rangeBtn,
-                { color: range === r ? theme.text : theme.sub },
-                range === r && styles.rangeActive,
-              ]}
-            >
+          <Pressable
+            key={r}
+            onPress={() => setRange(r)}
+            style={[styles.rangeBtn, range === r && styles.rangeBtnActive]}
+          >
+            <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>
               {r}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      {/* ---------- DONUT CHART ---------- */}
-      <View style={styles.chartWrap}>
-        <Svg width={200} height={200}>
-          <G rotation="-90" origin="100, 100">
-            {slices.length > 0 ? slices.map((slice, index) => (
-              <Circle
-                key={index}
-                cx="100"
-                cy="100"
-                r={RADIUS}
-                stroke={slice.color}
-                strokeWidth={STROKE}
-                strokeDasharray={`${slice.angle * 2.5} ${360 * 2.5}`}
-                strokeDashoffset={slice.startAngle * -2.5}
-                fill="none"
-              />
-            )) : (
-              <Circle
-                cx="100" cy="100" r={RADIUS} stroke={theme.border} strokeWidth={STROKE} fill="none"
-              />
-            )}
-          </G>
-        </Svg>
+      {/* ACCOUNT CARD */}
+      <Pressable onPress={() => setShowAccounts(!showAccounts)}>
+        <Card style={styles.accountCard}>
+          <View style={styles.row}>
+            <Text style={styles.accountLabel}>Selected Account</Text>
+            <Text style={styles.arrow}>▼</Text>
+          </View>
+          <Text style={styles.accountName}>
+            {selectedAccount ? selectedAccount.name : 'No Account'}
+          </Text>
 
-        <View style={styles.center}>
-          <Text style={[styles.total, { color: theme.text }]}>${total.toFixed(2)}</Text>
-          <Text style={{ color: theme.sub }}>Total</Text>
+          {showAccounts && (
+            <View style={styles.accountDropdown}>
+              {accounts.map(acc => (
+                <Pressable
+                  key={acc.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setSelectedAccount(acc);
+                    setShowAccounts(false);
+                  }}
+                >
+                  <Text style={styles.dropdownItemText}>{acc.name}</Text>
+                  <Text style={styles.dropdownItemBalance}>${acc.balance}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </Card>
+      </Pressable>
+
+      {/* CHART SECTION */}
+      <View style={styles.chartContainer}>
+        <View style={styles.chartWrap}>
+          <Svg width={240} height={240}>
+            <G rotation="-90" origin="120, 120">
+              {slices.length > 0 ? slices.map((slice, index) => (
+                <Circle
+                  key={index}
+                  cx="120"
+                  cy="120"
+                  r={RADIUS}
+                  stroke={slice.color}
+                  strokeWidth={STROKE}
+                  strokeDasharray={`${slice.angle * 2.5} ${360 * 2.5}`}
+                  strokeDashoffset={slice.startAngle * -2.5}
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              )) : (
+                <Circle
+                  cx="120" cy="120" r={RADIUS} stroke="#e5e7eb" strokeWidth={STROKE} fill="none"
+                />
+              )}
+            </G>
+          </Svg>
+
+          <View style={styles.center}>
+            <Text style={styles.totalLabel}>Spent</Text>
+            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+          </View>
         </View>
       </View>
 
-      {/* ---------- FOOTER ---------- */}
+      {/* FOOTER */}
       <View style={styles.footer}>
-        <Text
-          style={styles.footerItem}
-          onPress={() => navigation.navigate('AddExpense')}
-        >
-          🏠
-        </Text>
-        <Text style={[styles.footerItem, styles.footerActive]}>📊</Text>
-        <Text style={styles.footerItem}>⚙️</Text>
+        <Pressable style={styles.footerItem} onPress={() => navigation.navigate('AddExpense')}>
+          <Text style={styles.footerIcon}>🏠</Text>
+          <Text style={styles.footerText}>Home</Text>
+        </Pressable>
+        <Pressable style={styles.footerItem}>
+          <Text style={[styles.footerIcon, styles.footerActive]}>📊</Text>
+          <Text style={[styles.footerText, styles.footerTextActive]}>Stats</Text>
+        </Pressable>
+        <Pressable style={styles.footerItem}>
+          <Text style={styles.footerIcon}>⚙️</Text>
+          <Text style={styles.footerText}>Settings</Text>
+        </Pressable>
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 }
 
-/* ---------------- STYLES ---------------- */
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-
   header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-
-  title: { fontSize: 22, fontWeight: '700' },
-
-  themeSwitch: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 20,
-    overflow: 'hidden',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111827',
   },
-
-  themeOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  headerSub: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '500',
   },
-
-  themeActive: {
-    backgroundColor: '#e5e7eb',
-  },
-
-  card: {
-    borderRadius: 18,
-    padding: 16,
-    marginTop: 16,
-  },
-
-  balance: { fontSize: 26, fontWeight: '700', marginTop: 4 },
-
-  arrow: { position: 'absolute', right: 16, top: 20, fontSize: 18 },
-
-  dropdown: {
-    marginTop: 12,
-    borderTopWidth: 1,
-  },
-
-  dropdownItem: {
-    paddingVertical: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  rangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 20,
-  },
-
-  rangeBtn: { fontWeight: '600' },
-  rangeActive: { fontWeight: '800' },
-
-  chartWrap: {
+  profileBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  profileIcon: { fontSize: 20 },
+
+  rangeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  rangeBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  rangeBtnActive: {
+    backgroundColor: '#111827',
+  },
+  rangeText: {
+    fontWeight: '600',
+    color: '#6b7280',
+    fontSize: 12,
+  },
+  rangeTextActive: {
+    color: '#fff',
   },
 
+  accountCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  accountLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  arrow: { fontSize: 12, color: '#9ca3af' },
+  accountName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  accountDropdown: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  dropdownItemBalance: {
+    color: '#6b7280',
+  },
+
+  chartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  chartWrap: {
+    position: 'relative',
+    width: 240,
+    height: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   center: {
     position: 'absolute',
     alignItems: 'center',
   },
-
-  total: { fontSize: 22, fontWeight: '800' },
+  totalLabel: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginBottom: 4,
+  },
+  totalValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#111827',
+  },
 
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
+    height: 70,
+    backgroundColor: '#fff',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#e5e7eb',
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+    paddingBottom: 10,
   },
-
-  footerItem: { fontSize: 22 },
-  footerActive: { fontWeight: '800' },
+  footerItem: {
+    alignItems: 'center',
+  },
+  footerIcon: { fontSize: 24, marginBottom: 2 },
+  footerText: { fontSize: 10, color: '#9ca3af', fontWeight: '600' },
+  footerActive: {
+    color: '#00D09C',
+  },
+  footerTextActive: {
+    color: '#00D09C',
+  },
 });
