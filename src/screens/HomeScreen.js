@@ -8,6 +8,7 @@ import {
   TextInput,
   Modal,
   Alert,
+  ScrollView // Added for category list
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useWallet } from '../context/WalletContext';
@@ -24,6 +25,8 @@ import Card from '../components/Card';
 import AppButton from '../components/AppButton';
 import ExpenseItem from '../components/ExpenseItem';
 import Footer from '../components/Footer';
+
+const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Health', 'Others'];
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -43,8 +46,10 @@ export default function HomeScreen() {
   /* ---------------- FORM STATE ---------------- */
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountBalance, setNewAccountBalance] = useState('');
+
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseCategory, setExpenseCategory] = useState('Others'); // Default category
 
   /* ---------------- HANDLERS ---------------- */
   const handleAddAccount = async () => {
@@ -64,10 +69,11 @@ export default function HomeScreen() {
   const handleAddExpense = async () => {
     if (!expenseTitle || !expenseAmount || !selectedAccount) return;
     try {
-      await addExpenseService(expenseTitle, Number(expenseAmount), selectedAccount.id);
+      await addExpenseService(expenseTitle, Number(expenseAmount), expenseCategory, selectedAccount.id);
       await reloadData();
       setExpenseTitle('');
       setExpenseAmount('');
+      setExpenseCategory('Others');
       setShowAddExpense(false);
     } catch (e) {
       console.error(e);
@@ -113,13 +119,9 @@ export default function HomeScreen() {
     <ScreenWrapper>
       {/* HEADER */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Hello,</Text>
+        <View style={styles.headerTitleContainer}>
           <Text style={styles.appName}>WalletX</Text>
         </View>
-        <Pressable onPress={() => { }} style={styles.profileBtn}>
-          <Text style={styles.profileIcon}>👤</Text>
-        </Pressable>
       </View>
 
       {/* ACCOUNT SECTION */}
@@ -135,7 +137,11 @@ export default function HomeScreen() {
             </View>
           </Pressable>
           {selectedAccount && (
-            <Pressable style={styles.deleteAccountBtn} onPress={() => handleDeleteAccount(selectedAccount)}>
+            <Pressable
+              style={styles.deleteAccountBtn}
+              onPress={() => handleDeleteAccount(selectedAccount)}
+              hitSlop={20} // Increased hit area
+            >
               <Text style={styles.trashIcon}>🗑️</Text>
             </Pressable>
           )}
@@ -255,6 +261,28 @@ export default function HomeScreen() {
               value={expenseAmount}
               onChangeText={setExpenseAmount}
             />
+
+            <Text style={styles.label}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+              {CATEGORIES.map(cat => (
+                <Pressable
+                  key={cat}
+                  onPress={() => setExpenseCategory(cat)}
+                  style={[
+                    styles.categoryChip,
+                    expenseCategory === cat && styles.categoryChipActive
+                  ]}
+                >
+                  <Text style={[
+                    styles.categoryChipText,
+                    expenseCategory === cat && styles.categoryChipTextActive
+                  ]}>
+                    {cat}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
             <View style={styles.modalButtons}>
               <Pressable style={styles.cancelButton} onPress={() => setShowAddExpense(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
@@ -273,8 +301,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 10,
     paddingBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center', // Centered
+    justifyContent: 'center',
+  },
+  headerTitleContainer: {
     alignItems: 'center',
   },
   greeting: {
@@ -287,19 +317,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
   },
-  profileBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  profileIcon: { fontSize: 20 },
+  // Profile styles removed/hidden if needed, but keeping style cleanup
 
   accountCard: {
     marginHorizontal: 20,
@@ -438,6 +456,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#111827',
   },
+
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  categoryScroll: {
+    marginBottom: 20,
+    maxHeight: 50,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  categoryChipActive: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#00D09C',
+  },
+  categoryChipText: {
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  categoryChipTextActive: {
+    color: '#00D09C',
+    fontWeight: '600',
+  },
+
   modalButtons: {
     flexDirection: 'row',
     alignItems: 'center',

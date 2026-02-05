@@ -25,9 +25,12 @@ export default function Footer() {
                 <Text style={[styles.footerText, currentRoute === 'Stats' && styles.footerTextActive]}>Stats</Text>
             </Pressable>
 
-            <Pressable style={styles.footerItem}>
-                <Text style={styles.footerIcon}>⚙️</Text>
-                <Text style={styles.footerText}>Settings</Text>
+            <Pressable
+                style={styles.footerItem}
+                onPress={() => navigation.navigate('Settings')}
+            >
+                <Text style={[styles.footerIcon, currentRoute === 'Settings' && styles.footerActive]}>⚙️</Text>
+                <Text style={[styles.footerText, currentRoute === 'Settings' && styles.footerTextActive]}>Settings</Text>
             </Pressable>
         </View>
     );

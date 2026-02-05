@@ -17,7 +17,16 @@ import Footer from '../components/Footer';
 
 const RADIUS = 80;
 const STROKE = 22;
-const COLORS = ['#67e8f9', '#38bdf8', '#0ea5e9', '#0284c7'];
+// Colorful palette for categories
+// Food: red/orange, Transport: blue, etc.
+const COLORS = [
+  '#f472b6', // pink
+  '#22d3ee', // cyan
+  '#a78bfa', // purple
+  '#34d399', // emerald
+  '#fbbf24', // amber
+  '#f87171', // red
+];
 
 export default function StatsScreen() {
   const navigation = useNavigation();
@@ -30,7 +39,7 @@ export default function StatsScreen() {
 
   /* ---------------- STATE ---------------- */
   const [showAccounts, setShowAccounts] = useState(false);
-  const [range, setRange] = useState('DAY');
+  const [range, setRange] = useState('MONTH'); // Default to month
 
   /* ---------------- CALCULATIONS ---------------- */
 
@@ -64,15 +73,32 @@ export default function StatsScreen() {
 
   const total = expensesToShow.reduce((sum, e) => sum + e.amount, 0);
 
-  let cumulativeAngle = 0;
+  // Group by category
+  const categoryData = useMemo(() => {
+    const map = {};
+    expensesToShow.forEach(e => {
+      const cat = e.category || 'Uncategorized';
+      if (!map[cat]) map[cat] = 0;
+      map[cat] += e.amount;
+    });
 
-  const slices = expensesToShow.map((item, index) => {
+    return Object.keys(map).map(cat => ({
+      name: cat,
+      amount: map[cat],
+    })).sort((a, b) => b.amount - a.amount);
+  }, [expensesToShow]);
+
+
+  let cumulativeAngle = 0;
+  const slices = categoryData.map((item, index) => {
     const percent = total === 0 ? 0 : item.amount / total;
     const angle = percent * 360;
     const slice = {
       angle,
       color: COLORS[index % COLORS.length],
       startAngle: cumulativeAngle,
+      amount: item.amount,
+      name: item.name
     };
     cumulativeAngle += angle;
     return slice;
@@ -86,11 +112,8 @@ export default function StatsScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Overview</Text>
-          <Text style={styles.headerSub}>Spending Analysis</Text>
+          <Text style={styles.headerSub}>Analysis by Category</Text>
         </View>
-        <Pressable style={styles.profileBtn}>
-          <Text style={styles.profileIcon}>📊</Text>
-        </Pressable>
       </View>
 
       {/* FILTER TABS */}
@@ -166,10 +189,21 @@ export default function StatsScreen() {
           </Svg>
 
           <View style={styles.center}>
-            <Text style={styles.totalLabel}>Spent</Text>
+            <Text style={styles.totalLabel}>Total</Text>
             <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
           </View>
         </View>
+      </View>
+
+      {/* LEGEND */}
+      <View style={styles.legendContainer}>
+        {slices.map((slice, i) => (
+          <View key={i} style={styles.legendItem}>
+            <View style={[styles.dot, { backgroundColor: slice.color }]} />
+            <Text style={styles.legendName}>{slice.name}</Text>
+            <Text style={styles.legendAmount}>${slice.amount.toFixed(2)}</Text>
+          </View>
+        ))}
       </View>
 
       {/* FOOTER */}
@@ -198,19 +232,6 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
   },
-  profileBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  profileIcon: { fontSize: 20 },
 
   rangeContainer: {
     flexDirection: 'row',
@@ -283,7 +304,7 @@ const styles = StyleSheet.create({
   chartContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   chartWrap: {
     position: 'relative',
@@ -304,6 +325,37 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 24,
     fontWeight: '800',
+    color: '#111827',
+  },
+
+  legendContainer: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+    paddingBottom: 100,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+  },
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 10,
+  },
+  legendName: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  legendAmount: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#111827',
   },
 });

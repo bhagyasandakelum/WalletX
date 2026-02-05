@@ -46,16 +46,17 @@ export const deleteExpense = async (id) => {
 
 /* ---------------- EXPENSES ---------------- */
 
-export const addExpense = async (title, amount, accountId) => {
+export const addExpense = async (title, amount, category, accountId) => {
   const db = await getDBConnection();
   const date = new Date().toISOString();
 
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      'INSERT INTO expenses (title, amount, date, accountId) VALUES (?, ?, ?, ?)',
+      'INSERT INTO expenses (title, amount, date, category, accountId) VALUES (?, ?, ?, ?, ?)',
       title,
       amount,
       date,
+      category,
       accountId
     );
 

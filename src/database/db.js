@@ -27,8 +27,16 @@ export const initDB = async () => {
       title TEXT NOT NULL,
       amount REAL NOT NULL,
       date TEXT NOT NULL,
+      category TEXT,
       accountId INTEGER,
       FOREIGN KEY(accountId) REFERENCES accounts(id)
     );
   `);
+
+  // Migration for existing users (lazy migration)
+  try {
+    await db.execAsync('ALTER TABLE expenses ADD COLUMN category TEXT;');
+  } catch (e) {
+    // Column likely already exists
+  }
 };
