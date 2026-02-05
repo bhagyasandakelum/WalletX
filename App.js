@@ -3,8 +3,9 @@ import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { initDB } from './src/database/db';
+import { WalletProvider } from './src/context/WalletContext';
 
-import AddExpenseScreen from './src/screens/AddExpenseScreen';
+import HomeScreen from './src/screens/HomeScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import SplashScreen from './src/screens/SplashScreen';
 
@@ -28,11 +29,14 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
-        <Stack.Screen name="Stats" component={StatsScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <WalletProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Stats" component={StatsScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </WalletProvider>
   );
 }
+

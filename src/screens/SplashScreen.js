@@ -55,7 +55,7 @@ const SplashScreen = () => {
                 </View>
             </View>
             <View style={styles.bottomContainer}>
-                <Text style={styles.footerText}>develop by zeroaxill</Text>
+                <Text style={styles.footerText}>Developed by zeroaxill</Text>
             </View>
         </View>
     );

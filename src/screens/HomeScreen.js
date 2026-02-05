@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,37 @@ import {
   TextInput,
   Modal,
   Alert,
-  ScrollView,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { BlurView } from 'expo-blur'; // Assuming we might want to use it later, but stick to View for now if package not installed. Actually I checked and didn't see expo-blur. I'll stick to styling.
+import { useNavigation } from '@react-navigation/native';
+import { useWallet } from '../context/WalletContext';
 
 import {
-  getAccounts,
   addAccount as addAccountService,
   deleteAccount as deleteAccountService,
   addExpense as addExpenseService,
   deleteExpense as deleteExpenseService,
-  getExpensesByAccount,
 } from '../services/expenseService';
 
 import ScreenWrapper from '../components/ScreenWrapper';
 import Card from '../components/Card';
 import AppButton from '../components/AppButton';
 import ExpenseItem from '../components/ExpenseItem';
+import Footer from '../components/Footer';
 
-export default function AddExpenseScreen() {
+export default function HomeScreen() {
   const navigation = useNavigation();
+  const {
+    accounts,
+    selectedAccount,
+    expenses,
+    setSelectedAccount,
+    reloadData
+  } = useWallet();
 
   /* ---------------- STATE ---------------- */
   const [showAccounts, setShowAccounts] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
-
-  // Data from DB
-  const [accounts, setAccounts] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(null);
 
   /* ---------------- FORM STATE ---------------- */
   const [newAccountName, setNewAccountName] = useState('');
@@ -46,61 +46,12 @@ export default function AddExpenseScreen() {
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
 
-  /* ---------------- DATA LOADING ---------------- */
-  const loadAccounts = useCallback(async () => {
-    try {
-      const data = await getAccounts();
-      setAccounts(data);
-      if (data.length > 0) {
-        if (selectedAccount) {
-          const stillExists = data.find(a => a.id === selectedAccount.id);
-          if (stillExists) {
-            setSelectedAccount(stillExists);
-            return;
-          }
-        }
-        setSelectedAccount(data[0]);
-      } else {
-        setSelectedAccount(null);
-      }
-    } catch (e) {
-      console.error('Failed to load accounts', e);
-    }
-  }, [selectedAccount]);
-
-  const loadExpenses = useCallback(async () => {
-    if (!selectedAccount) {
-      setExpenses([]);
-      return;
-    }
-    try {
-      const data = await getExpensesByAccount(selectedAccount.id);
-      const parsed = data.map(e => ({
-        ...e,
-        date: new Date(e.date)
-      }));
-      setExpenses(parsed);
-    } catch (e) {
-      console.error('Failed to load expenses', e);
-    }
-  }, [selectedAccount]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadAccounts();
-    }, [])
-  );
-
-  useEffect(() => {
-    loadExpenses();
-  }, [selectedAccount, loadExpenses]);
-
   /* ---------------- HANDLERS ---------------- */
   const handleAddAccount = async () => {
     if (!newAccountName || !newAccountBalance) return;
     try {
       await addAccountService(newAccountName, Number(newAccountBalance));
-      await loadAccounts();
+      await reloadData();
       setNewAccountName('');
       setNewAccountBalance('');
       setShowAddAccount(false);
@@ -114,8 +65,7 @@ export default function AddExpenseScreen() {
     if (!expenseTitle || !expenseAmount || !selectedAccount) return;
     try {
       await addExpenseService(expenseTitle, Number(expenseAmount), selectedAccount.id);
-      await loadAccounts();
-      await loadExpenses();
+      await reloadData();
       setExpenseTitle('');
       setExpenseAmount('');
       setShowAddExpense(false);
@@ -137,8 +87,7 @@ export default function AddExpenseScreen() {
           onPress: async () => {
             try {
               await deleteAccountService(acc.id);
-              setSelectedAccount(null);
-              await loadAccounts();
+              await reloadData();
             } catch (e) {
               console.error(e);
               Alert.alert('Error', 'Could not delete account');
@@ -152,8 +101,7 @@ export default function AddExpenseScreen() {
   const handleDeleteExpense = async (id) => {
     try {
       await deleteExpenseService(id);
-      await loadAccounts(); // Balance changes on delete
-      await loadExpenses();
+      await reloadData();
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Could not delete expense');
@@ -259,20 +207,7 @@ export default function AddExpenseScreen() {
       </View>
 
       {/* FOOTER */}
-      <View style={styles.footer}>
-        <Pressable style={styles.footerItem}>
-          <Text style={[styles.footerIcon, styles.footerActive]}>🏠</Text>
-          <Text style={[styles.footerText, styles.footerTextActive]}>Home</Text>
-        </Pressable>
-        <Pressable style={styles.footerItem} onPress={() => navigation.navigate('Stats')}>
-          <Text style={styles.footerIcon}>📊</Text>
-          <Text style={styles.footerText}>Stats</Text>
-        </Pressable>
-        <Pressable style={styles.footerItem}>
-          <Text style={styles.footerIcon}>⚙️</Text>
-          <Text style={styles.footerText}>Settings</Text>
-        </Pressable>
-      </View>
+      <Footer />
 
       {/* ADD ACCOUNT MODAL */}
       <Modal visible={showAddAccount} transparent animationType="slide">
@@ -473,32 +408,6 @@ const styles = StyleSheet.create({
   },
   fab: {
     width: 160,
-  },
-
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 70,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingBottom: 10,
-  },
-  footerItem: {
-    alignItems: 'center',
-  },
-  footerIcon: { fontSize: 24, marginBottom: 2 },
-  footerText: { fontSize: 10, color: '#9ca3af', fontWeight: '600' },
-  footerActive: {
-    color: '#00D09C',
-  },
-  footerTextActive: {
-    color: '#00D09C',
   },
 
   modalOverlay: {

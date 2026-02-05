@@ -1,17 +1,17 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import Svg, { G, Circle } from 'react-native-svg';
-import { getAccounts, getExpensesByAccount } from '../services/expenseService';
+import { useWallet } from '../context/WalletContext';
 
 import ScreenWrapper from '../components/ScreenWrapper';
 import Card from '../components/Card';
-import AppButton from '../components/AppButton';
+import Footer from '../components/Footer';
 
 /* ---------------- CHART CONSTANTS ---------------- */
 
@@ -21,71 +21,29 @@ const COLORS = ['#67e8f9', '#38bdf8', '#0ea5e9', '#0284c7'];
 
 export default function StatsScreen() {
   const navigation = useNavigation();
+  const {
+    accounts,
+    selectedAccount,
+    expenses,
+    setSelectedAccount
+  } = useWallet();
 
   /* ---------------- STATE ---------------- */
   const [showAccounts, setShowAccounts] = useState(false);
   const [range, setRange] = useState('DAY');
 
-  // DB Data
-  const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(null);
-  const [expenses, setExpenses] = useState([]);
-
-  /* ---------------- DATA LOADING ---------------- */
-  const loadAccounts = useCallback(async () => {
-    try {
-      const data = await getAccounts();
-      setAccounts(data);
-      if (data.length > 0) {
-        if (selectedAccount) {
-          const stillExists = data.find(a => a.id === selectedAccount.id);
-          if (stillExists) {
-            setSelectedAccount(stillExists);
-            return;
-          }
-        }
-        setSelectedAccount(data[0]);
-      } else {
-        setSelectedAccount(null);
-      }
-    } catch (e) {
-      console.error('Failed to load accounts in stats', e);
-    }
-  }, [selectedAccount]);
-
-  const loadExpenses = useCallback(async () => {
-    if (!selectedAccount) {
-      setExpenses([]);
-      return;
-    }
-    try {
-      const data = await getExpensesByAccount(selectedAccount.id);
-      const parsed = data.map(e => ({
-        ...e,
-        date: new Date(e.date)
-      }));
-      setExpenses(parsed);
-    } catch (e) {
-      console.error('Failed to load expenses in stats', e);
-    }
-  }, [selectedAccount]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadAccounts();
-    }, [])
-  );
-
-  useEffect(() => {
-    loadExpenses();
-  }, [selectedAccount, loadExpenses]);
-
   /* ---------------- CALCULATIONS ---------------- */
 
   const expensesToShow = useMemo(() => {
+    // If no expenses or no dates, return empty
+    if (!expenses || expenses.length === 0) return [];
+
     const now = new Date();
     return expenses.filter(e => {
+      // e.date should be a Date object from Context
       const d = e.date;
+      if (!(d instanceof Date) || isNaN(d)) return false;
+
       if (range === 'DAY') {
         return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       }
@@ -173,7 +131,7 @@ export default function StatsScreen() {
                   }}
                 >
                   <Text style={styles.dropdownItemText}>{acc.name}</Text>
-                  <Text style={styles.dropdownItemBalance}>${acc.balance}</Text>
+                  <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
                 </Pressable>
               ))}
             </View>
@@ -215,20 +173,8 @@ export default function StatsScreen() {
       </View>
 
       {/* FOOTER */}
-      <View style={styles.footer}>
-        <Pressable style={styles.footerItem} onPress={() => navigation.navigate('AddExpense')}>
-          <Text style={styles.footerIcon}>🏠</Text>
-          <Text style={styles.footerText}>Home</Text>
-        </Pressable>
-        <Pressable style={styles.footerItem}>
-          <Text style={[styles.footerIcon, styles.footerActive]}>📊</Text>
-          <Text style={[styles.footerText, styles.footerTextActive]}>Stats</Text>
-        </Pressable>
-        <Pressable style={styles.footerItem}>
-          <Text style={styles.footerIcon}>⚙️</Text>
-          <Text style={styles.footerText}>Settings</Text>
-        </Pressable>
-      </View>
+      <Footer />
+
     </ScreenWrapper>
   );
 }
@@ -359,31 +305,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '800',
     color: '#111827',
-  },
-
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 70,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-    paddingBottom: 10,
-  },
-  footerItem: {
-    alignItems: 'center',
-  },
-  footerIcon: { fontSize: 24, marginBottom: 2 },
-  footerText: { fontSize: 10, color: '#9ca3af', fontWeight: '600' },
-  footerActive: {
-    color: '#00D09C',
-  },
-  footerTextActive: {
-    color: '#00D09C',
   },
 });
