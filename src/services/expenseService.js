@@ -19,10 +19,19 @@ export const addAccount = async (name, balance) => {
 
 export const deleteAccount = async (id) => {
   const db = await getDBConnection();
-  await db.withTransactionAsync(async () => {
-    await db.runAsync('DELETE FROM expenses WHERE accountId = ?', id);
-    await db.runAsync('DELETE FROM accounts WHERE id = ?', id);
-  });
+  // Executing sequentially
+  await db.runAsync('DELETE FROM expenses WHERE accountId = ?', id);
+  await db.runAsync('DELETE FROM accounts WHERE id = ?', id);
+};
+
+export const updateAccount = async (id, name, balance) => {
+  const db = await getDBConnection();
+  await db.runAsync(
+    'UPDATE accounts SET name = ?, balance = ? WHERE id = ?',
+    name,
+    balance,
+    id
+  );
 };
 
 export const deleteExpense = async (id) => {

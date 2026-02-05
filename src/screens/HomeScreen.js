@@ -16,6 +16,7 @@ import { useWallet } from '../context/WalletContext';
 import {
   addAccount as addAccountService,
   deleteAccount as deleteAccountService,
+  updateAccount as updateAccountService,
   addExpense as addExpenseService,
   deleteExpense as deleteExpenseService,
 } from '../services/expenseService';
@@ -41,6 +42,7 @@ export default function HomeScreen() {
   /* ---------------- STATE ---------------- */
   const [showAccounts, setShowAccounts] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
 
   /* ---------------- FORM STATE ---------------- */
@@ -52,18 +54,38 @@ export default function HomeScreen() {
   const [expenseCategory, setExpenseCategory] = useState('Others'); // Default category
 
   /* ---------------- HANDLERS ---------------- */
-  const handleAddAccount = async () => {
+  const handleSaveAccount = async () => {
     if (!newAccountName || !newAccountBalance) return;
     try {
-      await addAccountService(newAccountName, Number(newAccountBalance));
+      if (isEditing && selectedAccount) {
+        await updateAccountService(selectedAccount.id, newAccountName, Number(newAccountBalance));
+      } else {
+        await addAccountService(newAccountName, Number(newAccountBalance));
+      }
       await reloadData();
       setNewAccountName('');
       setNewAccountBalance('');
       setShowAddAccount(false);
+      setIsEditing(false);
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not add account');
+      Alert.alert('Error', 'Could not save account');
     }
+  };
+
+  const openEditAccount = () => {
+    if (!selectedAccount) return;
+    setNewAccountName(selectedAccount.name);
+    setNewAccountBalance(selectedAccount.balance.toString());
+    setIsEditing(true);
+    setShowAddAccount(true);
+  };
+
+  const openAddAccount = () => {
+    setNewAccountName('');
+    setNewAccountBalance('');
+    setIsEditing(false);
+    setShowAddAccount(true);
   };
 
   const handleAddExpense = async () => {
@@ -137,13 +159,22 @@ export default function HomeScreen() {
             </View>
           </Pressable>
           {selectedAccount && (
-            <Pressable
-              style={styles.deleteAccountBtn}
-              onPress={() => handleDeleteAccount(selectedAccount)}
-              hitSlop={20} // Increased hit area
-            >
-              <Text style={styles.trashIcon}>🗑️</Text>
-            </Pressable>
+            <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+              <Pressable
+                style={styles.deleteAccountBtn}
+                onPress={openEditAccount}
+                hitSlop={20}
+              >
+                <Text style={styles.trashIcon}>✏️</Text>
+              </Pressable>
+              <Pressable
+                style={styles.deleteAccountBtn}
+                onPress={() => handleDeleteAccount(selectedAccount)}
+                hitSlop={20}
+              >
+                <Text style={styles.trashIcon}>🗑️</Text>
+              </Pressable>
+            </View>
           )}
         </View>
 
@@ -169,7 +200,7 @@ export default function HomeScreen() {
             ))}
             <AppButton
               title="+ New Account"
-              onPress={() => { setShowAccounts(false); setShowAddAccount(true); }}
+              onPress={() => { setShowAccounts(false); openAddAccount(); }}
               style={{ marginTop: 10 }}
               color={['#3b82f6', '#2563eb']}
             />
@@ -219,7 +250,7 @@ export default function HomeScreen() {
       <Modal visible={showAddAccount} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>New Account</Text>
+            <Text style={styles.modalHeader}>{isEditing ? 'Edit Account' : 'New Account'}</Text>
             <TextInput
               placeholder="Account Name (e.g., Bank)"
               style={styles.input}
@@ -227,7 +258,7 @@ export default function HomeScreen() {
               onChangeText={setNewAccountName}
             />
             <TextInput
-              placeholder="Initial Balance"
+              placeholder="Balance"
               style={styles.input}
               keyboardType="numeric"
               value={newAccountBalance}
@@ -237,7 +268,11 @@ export default function HomeScreen() {
               <Pressable style={styles.cancelButton} onPress={() => setShowAddAccount(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
-              <AppButton title="Create Account" onPress={handleAddAccount} style={{ flex: 1 }} />
+              <AppButton
+                title={isEditing ? 'Save Changes' : 'Create Account'}
+                onPress={handleSaveAccount}
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         </View>
@@ -313,7 +348,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   appName: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '800',
     color: '#111827',
   },
@@ -327,7 +362,12 @@ const styles = StyleSheet.create({
   accountHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center', // Align center vertically
+    marginBottom: 10,
+  },
+  accountSelector: {
+    flex: 1, // Take available width
+    marginRight: 10,
   },
   accountLabel: {
     fontSize: 14,
