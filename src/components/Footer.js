@@ -2,13 +2,16 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export default function Footer() {
     const navigation = useNavigation();
     const route = useRoute();
     const currentRoute = route.name;
+    const insets = useSafeAreaInsets();
 
     return (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
             <Pressable
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Home')}
@@ -42,14 +45,14 @@ const styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        height: 70,
         backgroundColor: '#fff',
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: '#f3f4f6',
-        paddingBottom: 10,
+        // Height is removed to accommodate dynamic padding
+        paddingTop: 10,
     },
     footerItem: {
         alignItems: 'center',

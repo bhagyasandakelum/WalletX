@@ -8,7 +8,9 @@ import {
   TextInput,
   Modal,
   Alert,
-  ScrollView // Added for category list
+  ScrollView, // Added for category list
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useWallet } from '../context/WalletContext';
@@ -248,86 +250,96 @@ export default function HomeScreen() {
 
       {/* ADD ACCOUNT MODAL */}
       <Modal visible={showAddAccount} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>{isEditing ? 'Edit Account' : 'New Account'}</Text>
-            <TextInput
-              placeholder="Account Name (e.g., Bank)"
-              style={styles.input}
-              value={newAccountName}
-              onChangeText={setNewAccountName}
-            />
-            <TextInput
-              placeholder="Balance"
-              style={styles.input}
-              keyboardType="numeric"
-              value={newAccountBalance}
-              onChangeText={setNewAccountBalance}
-            />
-            <View style={styles.modalButtons}>
-              <Pressable style={styles.cancelButton} onPress={() => setShowAddAccount(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <AppButton
-                title={isEditing ? 'Save Changes' : 'Create Account'}
-                onPress={handleSaveAccount}
-                style={{ flex: 1 }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalHeader}>{isEditing ? 'Edit Account' : 'New Account'}</Text>
+              <TextInput
+                placeholder="Account Name (e.g., Bank)"
+                style={styles.input}
+                value={newAccountName}
+                onChangeText={setNewAccountName}
               />
+              <TextInput
+                placeholder="Balance"
+                style={styles.input}
+                keyboardType="numeric"
+                value={newAccountBalance}
+                onChangeText={setNewAccountBalance}
+              />
+              <View style={styles.modalButtons}>
+                <Pressable style={styles.cancelButton} onPress={() => setShowAddAccount(false)}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+                <AppButton
+                  title={isEditing ? 'Save Changes' : 'Create Account'}
+                  onPress={handleSaveAccount}
+                  style={{ flex: 1 }}
+                />
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ADD EXPENSE MODAL */}
       <Modal visible={showAddExpense} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalHeader}>New Expense</Text>
-            <TextInput
-              placeholder="What did you buy?"
-              style={styles.input}
-              value={expenseTitle}
-              onChangeText={setExpenseTitle}
-            />
-            <TextInput
-              placeholder="Amount"
-              style={styles.input}
-              keyboardType="numeric"
-              value={expenseAmount}
-              onChangeText={setExpenseAmount}
-            />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalHeader}>New Expense</Text>
+              <TextInput
+                placeholder="What did you buy?"
+                style={styles.input}
+                value={expenseTitle}
+                onChangeText={setExpenseTitle}
+              />
+              <TextInput
+                placeholder="Amount"
+                style={styles.input}
+                keyboardType="numeric"
+                value={expenseAmount}
+                onChangeText={setExpenseAmount}
+              />
 
-            <Text style={styles.label}>Category</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-              {CATEGORIES.map(cat => (
-                <Pressable
-                  key={cat}
-                  onPress={() => setExpenseCategory(cat)}
-                  style={[
-                    styles.categoryChip,
-                    expenseCategory === cat && styles.categoryChipActive
-                  ]}
-                >
-                  <Text style={[
-                    styles.categoryChipText,
-                    expenseCategory === cat && styles.categoryChipTextActive
-                  ]}>
-                    {cat}
-                  </Text>
+              <Text style={styles.label}>Category</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                {CATEGORIES.map(cat => (
+                  <Pressable
+                    key={cat}
+                    onPress={() => setExpenseCategory(cat)}
+                    style={[
+                      styles.categoryChip,
+                      expenseCategory === cat && styles.categoryChipActive
+                    ]}
+                  >
+                    <Text style={[
+                      styles.categoryChipText,
+                      expenseCategory === cat && styles.categoryChipTextActive
+                    ]}>
+                      {cat}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+
+              <View style={styles.modalButtons}>
+                <Pressable style={styles.cancelButton} onPress={() => setShowAddExpense(false)}>
+                  <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
-              ))}
-            </ScrollView>
-
-            <View style={styles.modalButtons}>
-              <Pressable style={styles.cancelButton} onPress={() => setShowAddExpense(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <AppButton title="Add Expense" onPress={handleAddExpense} style={{ flex: 1 }} color={['#ef4444', '#f87171']} />
+                <AppButton title="Add Expense" onPress={handleAddExpense} style={{ flex: 1 }} color={['#ef4444', '#f87171']} />
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-    </ScreenWrapper>
+    </ScreenWrapper >
   );
 }
 
