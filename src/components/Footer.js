@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#f3f4f6',
         // Height is removed to accommodate dynamic padding
-        paddingTop: 10,
+        paddingTop: 12,
     },
     footerItem: {
         alignItems: 'center',

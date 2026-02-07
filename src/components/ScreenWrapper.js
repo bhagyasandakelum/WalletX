@@ -1,8 +1,9 @@
-import React from 'react';
-import { StyleSheet, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, StatusBar, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ScreenWrapper({ children }) {
+    const insets = useSafeAreaInsets();
     return (
         <LinearGradient
             colors={['#fdfbfb', '#ebedee']} // Soft gray gradient
@@ -10,9 +11,9 @@ export default function ScreenWrapper({ children }) {
             end={{ x: 1, y: 1 }}
             style={styles.container}
         >
-            <SafeAreaView style={styles.safeArea}>
+            <View style={[styles.safeArea, { paddingTop: insets.top }]}>
                 {children}
-            </SafeAreaView>
+            </View>
             <StatusBar barStyle="dark-content" />
         </LinearGradient>
     );
@@ -24,6 +25,5 @@ const styles = StyleSheet.create({
     },
     safeArea: {
         flex: 1,
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     }
 });

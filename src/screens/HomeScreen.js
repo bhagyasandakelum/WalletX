@@ -13,6 +13,7 @@ import {
   Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '../context/WalletContext';
 
 import {
@@ -33,6 +34,7 @@ const CATEGORIES = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', '
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const {
     accounts,
     selectedAccount,
@@ -239,7 +241,7 @@ export default function HomeScreen() {
       <Footer />
 
       {/* FABs */}
-      <View style={styles.fabContainer}>
+      <View style={[styles.fabContainer, { bottom: 100 + insets.bottom }]}>
         <AppButton
           title="+ Expense"
           onPress={() => selectedAccount ? setShowAddExpense(true) : Alert.alert('Error', 'Please create an account first')}
@@ -292,7 +294,7 @@ export default function HomeScreen() {
           style={{ flex: 1 }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
               <Text style={styles.modalHeader}>New Expense</Text>
               <TextInput
                 placeholder="What did you buy?"
@@ -473,9 +475,9 @@ const styles = StyleSheet.create({
 
   fabContainer: {
     position: 'absolute',
-    bottom: 100, // Increased to avoid overlap
+    // bottom position handled inline
     alignSelf: 'center',
-    zIndex: 10, // Ensure it's on top
+    zIndex: 10,
   },
   fab: {
     width: 160,
@@ -491,7 +493,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    paddingBottom: 40,
+    // paddingBottom handled inline
   },
   modalHeader: {
     fontSize: 20,

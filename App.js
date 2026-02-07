@@ -26,21 +26,21 @@ export default function App() {
       .catch(err => console.log('Initialization error:', err));
   }, []);
 
-  if (!ready) {
-    return <SplashScreen />;
-  }
-
   return (
     <SafeAreaProvider>
-      <WalletProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Stats" component={StatsScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </WalletProvider>
+      {!ready ? (
+        <SplashScreen />
+      ) : (
+        <WalletProvider>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Stats" component={StatsScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </WalletProvider>
+      )}
     </SafeAreaProvider>
   );
 }

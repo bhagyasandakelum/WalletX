@@ -1,15 +1,21 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SplashScreen = () => {
+    const insets = useSafeAreaInsets();
     const titleText = "WalletX";
-    // Create an array of animated values, one for each character
+
+    // Animations
     const animatedValues = useRef(
         titleText.split('').map(() => new Animated.Value(0))
     ).current;
 
+    const logoScale = useRef(new Animated.Value(0)).current;
+    const logoOpacity = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
-        const animations = titleText.split('').map((_, i) => {
+        const textAnimations = titleText.split('').map((_, i) => {
             return Animated.timing(animatedValues[i], {
                 toValue: 1,
                 duration: 800,
@@ -17,13 +23,38 @@ const SplashScreen = () => {
             });
         });
 
-        // Stagger the animations by 150ms per letter
-        Animated.stagger(150, animations).start();
+        Animated.parallel([
+            Animated.timing(logoScale, {
+                toValue: 1,
+                duration: 1000,
+                // bouncy spring effect
+                useNativeDriver: true,
+            }),
+            Animated.timing(logoOpacity, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.stagger(100, textAnimations)
+        ]).start();
     }, []);
 
     return (
         <View style={styles.container}>
             <View style={styles.centerContainer}>
+                {/* Animated Logo */}
+                <Animated.Image
+                    source={require('../../assets/icon.png')}
+                    style={[
+                        styles.logo,
+                        {
+                            opacity: logoOpacity,
+                            transform: [{ scale: logoScale }]
+                        }
+                    ]}
+                />
+
+                {/* Animated Text */}
                 <View style={styles.textRow}>
                     {titleText.split('').map((char, index) => (
                         <Animated.Text
@@ -36,7 +67,7 @@ const SplashScreen = () => {
                                         {
                                             translateY: animatedValues[index].interpolate({
                                                 inputRange: [0, 1],
-                                                outputRange: [20, 0], // Slide up slightly
+                                                outputRange: [20, 0],
                                             }),
                                         },
                                         {
@@ -54,7 +85,9 @@ const SplashScreen = () => {
                     ))}
                 </View>
             </View>
-            <View style={styles.bottomContainer}>
+
+            {/* Footer Text - Positioned safely above the bottom */}
+            <View style={[styles.bottomContainer, { bottom: insets.bottom + 80 }]}>
                 <Text style={styles.footerText}>Developed by zeroaxill</Text>
             </View>
         </View>
@@ -69,9 +102,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     centerContainer: {
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    logo: {
+        width: 120,
+        height: 120,
+        borderRadius: 24,
+        marginBottom: 30,
     },
     textRow: {
         flexDirection: 'row',
@@ -80,7 +118,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 56,
         fontWeight: 'bold',
-        fontStyle: 'italic', // Italic as requested
+        fontStyle: 'italic',
         color: '#00D09C',
         textShadowColor: 'rgba(0, 208, 156, 0.5)',
         textShadowOffset: { width: 0, height: 0 },
@@ -89,13 +127,15 @@ const styles = StyleSheet.create({
     },
     bottomContainer: {
         position: 'absolute',
-        bottom: 40,
+        width: '100%',
+        alignItems: 'center',
     },
     footerText: {
-        fontSize: 14,
-        color: '#888',
-        letterSpacing: 1,
+        fontSize: 16,
+        color: '#ffffff',
+        letterSpacing: 1.2,
         fontStyle: 'italic',
+        opacity: 0.8,
     },
 });
 
