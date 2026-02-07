@@ -222,7 +222,7 @@ export default function HomeScreen() {
       <FlatList
         data={expenses}
         keyExtractor={item => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
+        contentContainerStyle={{ paddingBottom: 160, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -235,6 +235,9 @@ export default function HomeScreen() {
         )}
       />
 
+      {/* FOOTER */}
+      <Footer />
+
       {/* FABs */}
       <View style={styles.fabContainer}>
         <AppButton
@@ -244,9 +247,6 @@ export default function HomeScreen() {
           color={['#00d09c', '#00dfa8']}
         />
       </View>
-
-      {/* FOOTER */}
-      <Footer />
 
       {/* ADD ACCOUNT MODAL */}
       <Modal visible={showAddAccount} transparent animationType="slide">
@@ -473,8 +473,9 @@ const styles = StyleSheet.create({
 
   fabContainer: {
     position: 'absolute',
-    bottom: 80,
+    bottom: 100, // Increased to avoid overlap
     alignSelf: 'center',
+    zIndex: 10, // Ensure it's on top
   },
   fab: {
     width: 160,
