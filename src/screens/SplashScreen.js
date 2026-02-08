@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 const SplashScreen = () => {
     const insets = useSafeAreaInsets();
@@ -90,6 +91,7 @@ const SplashScreen = () => {
             <View style={[styles.bottomContainer, { bottom: insets.bottom + 80 }]}>
                 <Text style={styles.footerText}>Developed by zeroaxill</Text>
             </View>
+            <StatusBar style="light" />
         </View>
     );
 };

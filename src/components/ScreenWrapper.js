@@ -1,4 +1,5 @@
-import { View, StyleSheet, StatusBar, Platform } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,7 +15,7 @@ export default function ScreenWrapper({ children }) {
             <View style={[styles.safeArea, { paddingTop: insets.top }]}>
                 {children}
             </View>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar style="dark" />
         </LinearGradient>
     );
 }
