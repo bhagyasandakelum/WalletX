@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Svg, { G, Circle } from 'react-native-svg';
@@ -108,107 +109,112 @@ export default function StatsScreen() {
 
   return (
     <ScreenWrapper>
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Overview</Text>
-          <Text style={styles.headerSub}>Analysis by Category</Text>
-        </View>
-      </View>
-
-      {/* FILTER TABS */}
-      <View style={styles.rangeContainer}>
-        {['DAY', 'WEEK', 'MONTH', 'YEAR'].map(r => (
-          <Pressable
-            key={r}
-            onPress={() => setRange(r)}
-            style={[styles.rangeBtn, range === r && styles.rangeBtnActive]}
-          >
-            <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>
-              {r}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* ACCOUNT CARD */}
-      <Pressable onPress={() => setShowAccounts(!showAccounts)}>
-        <Card style={styles.accountCard}>
-          <View style={styles.row}>
-            <Text style={styles.accountLabel}>Selected Account</Text>
-            <Text style={styles.arrow}>▼</Text>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+      >
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Overview</Text>
+            <Text style={styles.headerSub}>Analysis by Category</Text>
           </View>
-          <Text style={styles.accountName}>
-            {selectedAccount ? selectedAccount.name : 'No Account'}
-          </Text>
+        </View>
 
-          {showAccounts && (
-            <View style={styles.accountDropdown}>
-              {accounts.map(acc => (
-                <Pressable
-                  key={acc.id}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setSelectedAccount(acc);
-                    setShowAccounts(false);
-                  }}
-                >
-                  <Text style={styles.dropdownItemText}>{acc.name}</Text>
-                  <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
-                </Pressable>
-              ))}
+        {/* FILTER TABS */}
+        <View style={styles.rangeContainer}>
+          {['DAY', 'WEEK', 'MONTH', 'YEAR'].map(r => (
+            <Pressable
+              key={r}
+              onPress={() => setRange(r)}
+              style={[styles.rangeBtn, range === r && styles.rangeBtnActive]}
+            >
+              <Text style={[styles.rangeText, range === r && styles.rangeTextActive]}>
+                {r}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {/* ACCOUNT CARD */}
+        <Pressable onPress={() => setShowAccounts(!showAccounts)}>
+          <Card style={styles.accountCard}>
+            <View style={styles.row}>
+              <Text style={styles.accountLabel}>Selected Account</Text>
+              <Text style={styles.arrow}>▼</Text>
             </View>
-          )}
-        </Card>
-      </Pressable>
+            <Text style={styles.accountName}>
+              {selectedAccount ? selectedAccount.name : 'No Account'}
+            </Text>
 
-      {/* CHART SECTION */}
-      <View style={styles.chartContainer}>
-        <View style={styles.chartWrap}>
-          <Svg width={240} height={240}>
-            <G rotation="-90" origin="120, 120">
-              {slices.length > 0 ? slices.map((slice, index) => (
-                <Circle
-                  key={index}
-                  cx="120"
-                  cy="120"
-                  r={RADIUS}
-                  stroke={slice.color}
-                  strokeWidth={STROKE}
-                  strokeDasharray={`${slice.angle * 2.5} ${360 * 2.5}`}
-                  strokeDashoffset={slice.startAngle * -2.5}
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              )) : (
-                <Circle
-                  cx="120" cy="120" r={RADIUS} stroke="#e5e7eb" strokeWidth={STROKE} fill="none"
-                />
-              )}
-            </G>
-          </Svg>
+            {showAccounts && (
+              <View style={styles.accountDropdown}>
+                {accounts.map(acc => (
+                  <Pressable
+                    key={acc.id}
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setSelectedAccount(acc);
+                      setShowAccounts(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{acc.name}</Text>
+                    <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+          </Card>
+        </Pressable>
 
-          <View style={styles.center}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+        {/* CHART SECTION */}
+        <View style={styles.chartContainer}>
+          <View style={styles.chartWrap}>
+            <Svg width={240} height={240}>
+              <G rotation="-90" origin="120, 120">
+                {slices.length > 0 ? slices.map((slice, index) => (
+                  <Circle
+                    key={index}
+                    cx="120"
+                    cy="120"
+                    r={RADIUS}
+                    stroke={slice.color}
+                    strokeWidth={STROKE}
+                    strokeDasharray={`${slice.angle * 2.5} ${360 * 2.5}`}
+                    strokeDashoffset={slice.startAngle * -2.5}
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                )) : (
+                  <Circle
+                    cx="120" cy="120" r={RADIUS} stroke="#e5e7eb" strokeWidth={STROKE} fill="none"
+                  />
+                )}
+              </G>
+            </Svg>
+
+            <View style={styles.center}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* LEGEND */}
-      <View style={styles.legendContainer}>
-        {slices.map((slice, i) => (
-          <View key={i} style={styles.legendItem}>
-            <View style={[styles.dot, { backgroundColor: slice.color }]} />
-            <Text style={styles.legendName}>{slice.name}</Text>
-            <Text style={styles.legendAmount}>${slice.amount.toFixed(2)}</Text>
-          </View>
-        ))}
-      </View>
+        {/* LEGEND */}
+        <View style={styles.legendContainer}>
+          {slices.map((slice, i) => (
+            <View key={i} style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: slice.color }]} />
+              <Text style={styles.legendName}>{slice.name}</Text>
+              <Text style={styles.legendAmount}>${slice.amount.toFixed(2)}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
 
       {/* FOOTER */}
       <Footer />
-
     </ScreenWrapper>
   );
 }
