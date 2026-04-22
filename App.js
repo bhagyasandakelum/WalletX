@@ -77,7 +77,7 @@ export default function App() {
     <SafeAreaProvider>
       <WalletProvider>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />

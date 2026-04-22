@@ -3,9 +3,25 @@ import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert } from 're
 import ScreenWrapper from '../components/ScreenWrapper';
 import Footer from '../components/Footer';
 
+import { useWallet } from '../context/WalletContext';
+
 export default function SettingsScreen() {
-    const [darkMode, setDarkMode] = useState(false);
+    const { isDarkMode, setIsDarkMode } = useWallet();
     const [notifications, setNotifications] = useState(true);
+
+    const themeColors = isDarkMode ? {
+        bg: '#1f2937',
+        text: '#f9fafb',
+        subText: '#9ca3af',
+        cardBg: '#374151',
+        border: '#4b5563'
+    } : {
+        bg: '#f3f4f6',
+        text: '#111827',
+        subText: '#6b7280',
+        cardBg: '#ffffff',
+        border: '#f3f4f6'
+    };
 
     const handleReset = () => {
         Alert.alert(
@@ -25,32 +41,32 @@ export default function SettingsScreen() {
     return (
         <ScreenWrapper>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Settings</Text>
+                <Text style={[styles.headerTitle, { color: themeColors.text }]}>Settings</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>General</Text>
+                <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>General</Text>
 
                     <View style={styles.row}>
                         <View>
-                            <Text style={styles.label}>Dark Mode</Text>
-                            <Text style={styles.subLabel}>Enable dark theme</Text>
+                            <Text style={[styles.label, { color: themeColors.text }]}>Dark Mode</Text>
+                            <Text style={[styles.subLabel, { color: themeColors.subText }]}>Enable dark theme</Text>
                         </View>
                         <Switch
-                            value={darkMode}
-                            onValueChange={setDarkMode}
+                            value={isDarkMode}
+                            onValueChange={setIsDarkMode}
                             trackColor={{ false: '#e5e7eb', true: '#00D09C' }}
                         />
                     </View>
 
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
                     <View style={styles.row}>
                         <View>
-                            <Text style={styles.label}>Notifications</Text>
-                            <Text style={styles.subLabel}>Daily reminders</Text>
+                            <Text style={[styles.label, { color: themeColors.text }]}>Notifications</Text>
+                            <Text style={[styles.subLabel, { color: themeColors.subText }]}>Daily reminders</Text>
                         </View>
                         <Switch
                             value={notifications}
@@ -60,24 +76,24 @@ export default function SettingsScreen() {
                     </View>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Data</Text>
+                <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>Data</Text>
 
                     <Pressable style={styles.rowButton} onPress={handleReset}>
                         <Text style={[styles.label, { color: '#ef4444' }]}>Reset All Data</Text>
                     </Pressable>
                 </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>About</Text>
+                <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>About</Text>
                     <View style={styles.row}>
-                        <Text style={styles.label}>Version</Text>
-                        <Text style={styles.value}>1.0.0</Text>
+                        <Text style={[styles.label, { color: themeColors.text }]}>Version</Text>
+                        <Text style={[styles.value, { color: themeColors.subText }]}>1.0.1</Text>
                     </View>
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
                     <View style={styles.row}>
-                        <Text style={styles.label}>Developer</Text>
-                        <Text style={styles.value}>zeroaxill</Text>
+                        <Text style={[styles.label, { color: themeColors.text }]}>Developer</Text>
+                        <Text style={[styles.value, { color: themeColors.subText }]}>zeroaxill</Text>
                     </View>
                 </View>
 

@@ -8,6 +8,7 @@ export const WalletProvider = ({ children }) => {
     const [selectedAccount, setSelectedAccount] = useState(null);
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     // Load all accounts
     const loadAccounts = useCallback(async () => {
@@ -79,7 +80,9 @@ export const WalletProvider = ({ children }) => {
         selectedAccount,
         expenses,
         loading,
+        isDarkMode,
         setSelectedAccount,
+        setIsDarkMode,
         reloadData,
     };
 

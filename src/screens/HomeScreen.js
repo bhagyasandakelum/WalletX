@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,11 @@ import {
   Alert,
   ScrollView, // Added for category list
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  BackHandler,
+  ToastAndroid
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '../context/WalletContext';
 
@@ -42,6 +44,34 @@ export default function HomeScreen() {
     setSelectedAccount,
     reloadData
   } = useWallet();
+
+  /* ---------------- BACK HANDLER TO EXIT ---------------- */
+  const backPressCount = useRef(0);
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        if (backPressCount.current === 1) {
+          BackHandler.exitApp();
+          return true;
+        }
+        
+        backPressCount.current = 1;
+        if (Platform.OS === 'android') {
+          ToastAndroid.show('Press back again to exit', ToastAndroid.SHORT);
+        }
+        
+        setTimeout(() => {
+          backPressCount.current = 0;
+        }, 2000);
+        
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   /* ---------------- STATE ---------------- */
   const [showAccounts, setShowAccounts] = useState(false);
