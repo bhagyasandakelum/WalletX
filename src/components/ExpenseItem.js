@@ -31,7 +31,7 @@ export default function ExpenseItem({ item, onDelete }) {
                 </View>
             </View>
             <View style={styles.right}>
-                <Text style={styles.amount}>-${item.amount.toFixed(2)}</Text>
+                <Text style={styles.amount}>-රු {item.amount.toFixed(2)}</Text>
                 <Pressable hitSlop={10} onPress={handleDelete} style={styles.deleteBtn}>
                     <Text style={styles.deleteText}>✕</Text>
                 </Pressable>

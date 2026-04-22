@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 import { initDB } from './src/database/db';
 import { WalletProvider } from './src/context/WalletContext';
@@ -29,6 +30,22 @@ export default function App() {
           initDB(),
           new Promise(resolve => setTimeout(resolve, 3000))
         ]);
+
+        try {
+          const hasHardware = await LocalAuthentication.hasHardwareAsync();
+          if (hasHardware) {
+            const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+            if (isEnrolled) {
+              await LocalAuthentication.authenticateAsync({ 
+                promptMessage: "Unlock WalletX to continue",
+                cancelLabel: "Cancel",
+                disableDeviceFallback: false 
+              });
+            }
+          }
+        } catch (authError) {
+          console.warn("Auth error:", authError);
+        }
       } catch (e) {
         console.warn(e);
       } finally {

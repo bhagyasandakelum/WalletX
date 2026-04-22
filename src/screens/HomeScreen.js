@@ -183,7 +183,7 @@ export default function HomeScreen() {
         </View>
 
         <Text style={styles.balance}>
-          ${selectedAccount ? selectedAccount.balance.toFixed(2) : '0.00'}
+          රු {selectedAccount ? selectedAccount.balance.toFixed(2) : '0.00'}
         </Text>
 
         {showAccounts && (
@@ -199,7 +199,7 @@ export default function HomeScreen() {
                 }}
               >
                 <Text style={styles.dropdownItemText}>{acc.name}</Text>
-                <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
+                <Text style={styles.dropdownItemBalance}>රු {acc.balance.toFixed(2)}</Text>
               </Pressable>
             ))}
             <AppButton

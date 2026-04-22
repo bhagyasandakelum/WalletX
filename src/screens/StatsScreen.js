@@ -160,7 +160,7 @@ export default function StatsScreen() {
                     }}
                   >
                     <Text style={styles.dropdownItemText}>{acc.name}</Text>
-                    <Text style={styles.dropdownItemBalance}>${acc.balance.toFixed(2)}</Text>
+                    <Text style={styles.dropdownItemBalance}>රු {acc.balance.toFixed(2)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -196,7 +196,7 @@ export default function StatsScreen() {
 
             <View style={styles.center}>
               <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+              <Text style={styles.totalValue}>රු {total.toFixed(2)}</Text>
             </View>
           </View>
         </View>
@@ -207,7 +207,7 @@ export default function StatsScreen() {
             <View key={i} style={styles.legendItem}>
               <View style={[styles.dot, { backgroundColor: slice.color }]} />
               <Text style={styles.legendName}>{slice.name}</Text>
-              <Text style={styles.legendAmount}>${slice.amount.toFixed(2)}</Text>
+              <Text style={styles.legendAmount}>රු {slice.amount.toFixed(2)}</Text>
             </View>
           ))}
         </View>
