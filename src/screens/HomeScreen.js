@@ -271,7 +271,7 @@ export default function HomeScreen() {
       <Footer />
 
       {/* FABs */}
-      <View style={[styles.fabContainer, { bottom: 100 + insets.bottom }]}>
+      <View style={[styles.fabContainer, { bottom: 125 + insets.bottom }]}>
         <AppButton
           title="+ Expense"
           onPress={() => selectedAccount ? setShowAddExpense(true) : Alert.alert('Error', 'Please create an account first')}
@@ -508,6 +508,11 @@ const styles = StyleSheet.create({
     // bottom position handled inline
     alignSelf: 'center',
     zIndex: 10,
+    shadowColor: '#00D09C',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   fab: {
     width: 160,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Feather } from '@expo/vector-icons';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +17,7 @@ export default function Footer() {
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Home')}
             >
-                <Text style={[styles.footerIcon, (currentRoute === 'Home' || currentRoute === 'AddExpense') && styles.footerActive]}>🏠</Text>
+                <Feather name="home" size={22} color={(currentRoute === 'Home' || currentRoute === 'AddExpense') ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
                 <Text style={[styles.footerText, (currentRoute === 'Home' || currentRoute === 'AddExpense') && styles.footerTextActive]}>Home</Text>
             </Pressable>
 
@@ -24,7 +25,7 @@ export default function Footer() {
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Stats')}
             >
-                <Text style={[styles.footerIcon, currentRoute === 'Stats' && styles.footerActive]}>📊</Text>
+                <Feather name="pie-chart" size={22} color={currentRoute === 'Stats' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
                 <Text style={[styles.footerText, currentRoute === 'Stats' && styles.footerTextActive]}>Stats</Text>
             </Pressable>
 
@@ -32,7 +33,7 @@ export default function Footer() {
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Settings')}
             >
-                <Text style={[styles.footerIcon, currentRoute === 'Settings' && styles.footerActive]}>⚙️</Text>
+                <Feather name="settings" size={22} color={currentRoute === 'Settings' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
                 <Text style={[styles.footerText, currentRoute === 'Settings' && styles.footerTextActive]}>Settings</Text>
             </Pressable>
         </View>
@@ -60,9 +61,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     footerIcon: {
-        fontSize: 24,
-        marginBottom: 2,
-        color: '#9ca3af' // Default color
+        marginBottom: 4,
     },
     footerText: {
         fontSize: 10,
