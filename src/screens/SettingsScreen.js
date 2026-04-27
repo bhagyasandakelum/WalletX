@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert, Share } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert, Share, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Footer from '../components/Footer';
 

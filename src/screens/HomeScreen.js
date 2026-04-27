@@ -42,7 +42,8 @@ export default function HomeScreen() {
     selectedAccount,
     expenses,
     setSelectedAccount,
-    reloadData
+    reloadData,
+    weeklyBudget
   } = useWallet();
 
   /* ---------------- BACK HANDLER TO EXIT ---------------- */
@@ -125,7 +126,31 @@ export default function HomeScreen() {
   const handleAddExpense = async () => {
     if (!expenseTitle || !expenseAmount || !selectedAccount) return;
     try {
-      await addExpenseService(expenseTitle, Number(expenseAmount), expenseCategory, selectedAccount.id);
+      const amountNum = Number(expenseAmount);
+      await addExpenseService(expenseTitle, amountNum, expenseCategory, selectedAccount.id);
+      
+      // Check budget
+      if (weeklyBudget && weeklyBudget > 0) {
+        // Calculate current week's total
+        const now = new Date();
+        const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+        
+        const thisWeekTotal = expenses.reduce((sum, exp) => {
+          const expDate = new Date(exp.date);
+          if (expDate >= startOfWeek) {
+            return sum + exp.amount;
+          }
+          return sum;
+        }, 0);
+
+        if (thisWeekTotal + amountNum > weeklyBudget) {
+          Alert.alert(
+            'Budget Exceeded! ⚠️',
+            `You have exceeded your weekly budget of රු ${weeklyBudget.toFixed(2)}.`
+          );
+        }
+      }
+
       await reloadData();
       setExpenseTitle('');
       setExpenseAmount('');

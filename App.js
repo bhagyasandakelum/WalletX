@@ -12,6 +12,7 @@ import { WalletProvider } from './src/context/WalletContext';
 import HomeScreen from './src/screens/HomeScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import BudgetScreen from './src/screens/BudgetScreen';
 import CustomSplashScreen from './src/screens/SplashScreen'; // Renamed to avoid clearer distinction
 
 // Prevent native splash screen from auto-hiding
@@ -80,6 +81,7 @@ export default function App() {
           <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
+            <Stack.Screen name="Budget" component={BudgetScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </Stack.Navigator>
         </NavigationContainer>

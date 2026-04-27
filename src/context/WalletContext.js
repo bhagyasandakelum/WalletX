@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { getAccounts, getExpensesByAccount } from '../services/expenseService';
+import { getAccounts, getExpensesByAccount, getSetting, setSetting } from '../services/expenseService';
 
 const WalletContext = createContext();
 
@@ -9,6 +9,7 @@ export const WalletProvider = ({ children }) => {
     const [expenses, setExpenses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [weeklyBudget, setWeeklyBudget] = useState(null);
 
     // Load all accounts
     const loadAccounts = useCallback(async () => {
@@ -59,9 +60,20 @@ export const WalletProvider = ({ children }) => {
         }
     }, [selectedAccount]);
 
+    const loadSettings = async () => {
+        const budget = await getSetting('weeklyBudget');
+        setWeeklyBudget(budget ? Number(budget) : null);
+    };
+
+    const updateWeeklyBudget = async (amount) => {
+        await setSetting('weeklyBudget', amount.toString());
+        setWeeklyBudget(Number(amount));
+    };
+
     // Trigger loadAccounts on mount
     useEffect(() => {
         loadAccounts();
+        loadSettings();
     }, []);
 
     // Trigger loadExpenses when selectedAccount changes (or balance updates via loadAccounts which updates selectedAccount obj)
@@ -72,6 +84,7 @@ export const WalletProvider = ({ children }) => {
     // Exposed method to force refresh (e.g. after adding expense)
     const reloadData = async () => {
         await loadAccounts();
+        await loadSettings();
         // loadExpenses will trigger automatically via useEffect when selectedAccount updates
     };
 
@@ -81,8 +94,10 @@ export const WalletProvider = ({ children }) => {
         expenses,
         loading,
         isDarkMode,
+        weeklyBudget,
         setSelectedAccount,
         setIsDarkMode,
+        updateWeeklyBudget,
         reloadData,
     };
 

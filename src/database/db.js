@@ -31,6 +31,10 @@ export const initDB = async () => {
       accountId INTEGER,
       FOREIGN KEY(accountId) REFERENCES accounts(id)
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
 
   // Migration for existing users (lazy migration)

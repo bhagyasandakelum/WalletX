@@ -31,6 +31,14 @@ export default function Footer() {
 
             <Pressable
                 style={styles.footerItem}
+                onPress={() => navigation.navigate('Budget')}
+            >
+                <Feather name="target" size={22} color={currentRoute === 'Budget' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
+                <Text style={[styles.footerText, currentRoute === 'Budget' && styles.footerTextActive]}>Budget</Text>
+            </Pressable>
+
+            <Pressable
+                style={styles.footerItem}
                 onPress={() => navigation.navigate('Settings')}
             >
                 <Feather name="settings" size={22} color={currentRoute === 'Settings' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />

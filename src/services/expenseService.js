@@ -97,3 +97,16 @@ export const resetAllData = async () => {
     await db.runAsync('DELETE FROM accounts');
   });
 };
+
+/* ---------------- SETTINGS ---------------- */
+
+export const getSetting = async (key) => {
+  const db = await getDBConnection();
+  const row = await db.getFirstAsync('SELECT value FROM settings WHERE key = ?', key);
+  return row ? row.value : null;
+};
+
+export const setSetting = async (key, value) => {
+  const db = await getDBConnection();
+  await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
+};
