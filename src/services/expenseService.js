@@ -89,3 +89,11 @@ export const getAllExpenses = async () => {
   const db = await getDBConnection();
   return await db.getAllAsync('SELECT * FROM expenses ORDER BY date DESC');
 };
+
+export const resetAllData = async () => {
+  const db = await getDBConnection();
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM expenses');
+    await db.runAsync('DELETE FROM accounts');
+  });
+};

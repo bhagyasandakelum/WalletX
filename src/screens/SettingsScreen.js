@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert, Share } from 'react-native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Footer from '../components/Footer';
 
 import { useWallet } from '../context/WalletContext';
+import { resetAllData, getAccounts, getAllExpenses } from '../services/expenseService';
 
 export default function SettingsScreen() {
-    const { isDarkMode, setIsDarkMode } = useWallet();
+    const { isDarkMode, setIsDarkMode, reloadData } = useWallet();
     const [notifications, setNotifications] = useState(true);
+    const [appLock, setAppLock] = useState(false);
 
     const themeColors = isDarkMode ? {
         bg: '#1f2937',
@@ -32,10 +34,34 @@ export default function SettingsScreen() {
                 {
                     text: "Reset",
                     style: "destructive",
-                    onPress: () => Alert.alert("Reset", "Data reset functionality to be implemented.")
+                    onPress: async () => {
+                        try {
+                            await resetAllData();
+                            await reloadData();
+                            Alert.alert("Success", "All data has been reset.");
+                        } catch (error) {
+                            Alert.alert("Error", "Could not reset data.");
+                            console.error(error);
+                        }
+                    }
                 }
             ]
         );
+    };
+
+    const handleExportData = async () => {
+        try {
+            const accounts = await getAccounts();
+            const expenses = await getAllExpenses();
+            const data = JSON.stringify({ accounts, expenses }, null, 2);
+            await Share.share({
+                message: data,
+                title: 'WalletX Backup Data'
+            });
+        } catch (error) {
+            Alert.alert("Error", "Could not export data.");
+            console.error(error);
+        }
     };
 
     return (
@@ -77,8 +103,28 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
+                    <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>Security</Text>
+
+                    <View style={styles.row}>
+                        <View>
+                            <Text style={[styles.label, { color: themeColors.text }]}>App Lock</Text>
+                            <Text style={[styles.subLabel, { color: themeColors.subText }]}>Require authentication to open</Text>
+                        </View>
+                        <Switch
+                            value={appLock}
+                            onValueChange={setAppLock}
+                            trackColor={{ false: '#e5e7eb', true: '#00D09C' }}
+                        />
+                    </View>
+                </View>
+
+                <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
                     <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>Data</Text>
 
+                    <Pressable style={styles.rowButton} onPress={handleExportData}>
+                        <Text style={[styles.label, { color: themeColors.text }]}>Export Data (JSON)</Text>
+                    </Pressable>
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
                     <Pressable style={styles.rowButton} onPress={handleReset}>
                         <Text style={[styles.label, { color: '#ef4444' }]}>Reset All Data</Text>
                     </Pressable>
@@ -86,6 +132,16 @@ export default function SettingsScreen() {
 
                 <View style={[styles.section, { backgroundColor: themeColors.cardBg }]}>
                     <Text style={[styles.sectionTitle, { color: themeColors.subText }]}>About</Text>
+                    
+                    <Pressable style={styles.rowButton} onPress={() => Alert.alert("Privacy Policy", "Your data stays on your device.")}>
+                        <Text style={[styles.label, { color: themeColors.text }]}>Privacy Policy</Text>
+                    </Pressable>
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+                    <Pressable style={styles.rowButton} onPress={() => Alert.alert("Terms of Service", "Use this app responsibly.")}>
+                        <Text style={[styles.label, { color: themeColors.text }]}>Terms of Service</Text>
+                    </Pressable>
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
+                    
                     <View style={styles.row}>
                         <Text style={[styles.label, { color: themeColors.text }]}>Version</Text>
                         <Text style={[styles.value, { color: themeColors.subText }]}>1.0.1</Text>
