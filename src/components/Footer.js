@@ -11,7 +11,7 @@ export default function Footer() {
     const insets = useSafeAreaInsets();
 
     return (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
+        <View style={[styles.footer, { bottom: Math.max(insets.bottom + 10, 20) }]}>
             <Pressable
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Home')}
@@ -42,17 +42,19 @@ export default function Footer() {
 const styles = StyleSheet.create({
     footer: {
         position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        left: 20,
+        right: 20,
         backgroundColor: '#fff',
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        borderTopWidth: 1,
-        borderTopColor: '#f3f4f6',
-        // Height is removed to accommodate dynamic padding
-        paddingTop: 12,
+        paddingVertical: 15,
+        borderRadius: 50,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 8,
     },
     footerItem: {
         alignItems: 'center',
