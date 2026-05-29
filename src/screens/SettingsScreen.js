@@ -1,15 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, ScrollView, Pressable, Alert, Share, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import ScreenWrapper from '../components/ScreenWrapper';
 import Footer from '../components/Footer';
 
 import { useWallet } from '../context/WalletContext';
-import { resetAllData, getAccounts, getAllExpenses } from '../services/expenseService';
+import { resetAllData, getAccounts, getAllExpenses, getSetting, setSetting } from '../services/expenseService';
 
 export default function SettingsScreen() {
     const { isDarkMode, setIsDarkMode, reloadData } = useWallet();
     const [notifications, setNotifications] = useState(true);
     const [appLock, setAppLock] = useState(false);
+
+    useEffect(() => {
+        const loadAppLockSetting = async () => {
+            try {
+                const val = await getSetting('appLock');
+                setAppLock(val === 'true');
+            } catch (err) {
+                console.error("Failed to load appLock setting", err);
+            }
+        };
+        loadAppLockSetting();
+    }, []);
+
+    const handleToggleAppLock = async (value) => {
+        try {
+            setAppLock(value);
+            await setSetting('appLock', value ? 'true' : 'false');
+        } catch (err) {
+            console.error("Failed to save appLock setting", err);
+        }
+    };
 
     const themeColors = isDarkMode ? {
         bg: '#1f2937',
@@ -112,7 +133,7 @@ export default function SettingsScreen() {
                         </View>
                         <Switch
                             value={appLock}
-                            onValueChange={setAppLock}
+                            onValueChange={handleToggleAppLock}
                             trackColor={{ false: '#e5e7eb', true: '#00D09C' }}
                         />
                     </View>

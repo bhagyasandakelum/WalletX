@@ -61,13 +61,21 @@ export const WalletProvider = ({ children }) => {
     }, [selectedAccount]);
 
     const loadSettings = async () => {
-        const budget = await getSetting('weeklyBudget');
-        setWeeklyBudget(budget ? Number(budget) : null);
+        try {
+            const budget = await getSetting('weeklyBudget');
+            setWeeklyBudget(budget ? Number(budget) : null);
+        } catch (error) {
+            console.error('Context: Failed to load settings', error);
+        }
     };
 
     const updateWeeklyBudget = async (amount) => {
-        await setSetting('weeklyBudget', amount.toString());
-        setWeeklyBudget(Number(amount));
+        try {
+            await setSetting('weeklyBudget', amount.toString());
+            setWeeklyBudget(Number(amount));
+        } catch (error) {
+            console.error('Context: Failed to update weekly budget', error);
+        }
     };
 
     // Trigger loadAccounts on mount
