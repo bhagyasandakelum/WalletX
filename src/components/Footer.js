@@ -39,6 +39,14 @@ export default function Footer() {
 
             <Pressable
                 style={styles.footerItem}
+                onPress={() => navigation.navigate('Notifications')}
+            >
+                <Feather name="bell" size={22} color={currentRoute === 'Notifications' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
+                <Text style={[styles.footerText, currentRoute === 'Notifications' && styles.footerTextActive]}>Insights</Text>
+            </Pressable>
+
+            <Pressable
+                style={styles.footerItem}
                 onPress={() => navigation.navigate('Settings')}
             >
                 <Feather name="settings" size={22} color={currentRoute === 'Settings' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />

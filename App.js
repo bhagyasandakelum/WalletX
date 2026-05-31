@@ -16,6 +16,7 @@ import StatsScreen from './src/screens/StatsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import BudgetScreen from './src/screens/BudgetScreen';
 import CustomSplashScreen from './src/screens/SplashScreen'; // Renamed for a clearer distinction
+import NotificationsScreen from './src/screens/NotificationsScreen';
 
 // Prevent native splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -116,6 +117,7 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Stats" component={StatsScreen} />
             <Stack.Screen name="Budget" component={BudgetScreen} />
+            <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </Stack.Navigator>
         </NavigationContainer>

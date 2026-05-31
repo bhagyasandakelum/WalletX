@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { getAccounts, getExpensesByAccount, getSetting, setSetting } from '../services/expenseService';
+import { generateFinancialInsights, triggerSystemNotification } from '../services/insightService';
 
 const WalletContext = createContext();
 
@@ -10,6 +11,7 @@ export const WalletProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [weeklyBudget, setWeeklyBudget] = useState(null);
+    const [notifications, setNotifications] = useState([]);
 
     // Load all accounts
     const loadAccounts = useCallback(async () => {
@@ -64,6 +66,15 @@ export const WalletProvider = ({ children }) => {
         try {
             const budget = await getSetting('weeklyBudget');
             setWeeklyBudget(budget ? Number(budget) : null);
+
+            const loadedNotifications = await getSetting('notifications');
+            if (loadedNotifications) {
+                setNotifications(JSON.parse(loadedNotifications));
+            } else {
+                const initial = generateFinancialInsights([], budget ? Number(budget) : null);
+                setNotifications(initial);
+                await setSetting('notifications', JSON.stringify(initial));
+            }
         } catch (error) {
             console.error('Context: Failed to load settings', error);
         }
@@ -75,6 +86,47 @@ export const WalletProvider = ({ children }) => {
             setWeeklyBudget(Number(amount));
         } catch (error) {
             console.error('Context: Failed to update weekly budget', error);
+        }
+    };
+
+    const triggerInsightGeneration = async () => {
+        try {
+            const currentBudget = weeklyBudget;
+            const generated = generateFinancialInsights(expenses, currentBudget);
+
+            setNotifications(generated);
+            await setSetting('notifications', JSON.stringify(generated));
+
+            const alertNotification = generated.find(n => !n.read) || generated[0];
+            if (alertNotification) {
+                await triggerSystemNotification(
+                    alertNotification.title,
+                    alertNotification.description.split('\n')[0]
+                );
+            }
+        } catch (error) {
+            console.error('Context: Failed to generate insights', error);
+        }
+    };
+
+    const markNotificationAsRead = async (id) => {
+        try {
+            setNotifications(prev => {
+                const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+                setSetting('notifications', JSON.stringify(updated));
+                return updated;
+            });
+        } catch (error) {
+            console.error('Context: Failed to mark notification as read', error);
+        }
+    };
+
+    const clearAllNotifications = async () => {
+        try {
+            setNotifications([]);
+            await setSetting('notifications', JSON.stringify([]));
+        } catch (error) {
+            console.error('Context: Failed to clear notifications', error);
         }
     };
 
@@ -103,10 +155,14 @@ export const WalletProvider = ({ children }) => {
         loading,
         isDarkMode,
         weeklyBudget,
+        notifications,
         setSelectedAccount,
         setIsDarkMode,
         updateWeeklyBudget,
         reloadData,
+        triggerInsightGeneration,
+        markNotificationAsRead,
+        clearAllNotifications,
     };
 
     return (
