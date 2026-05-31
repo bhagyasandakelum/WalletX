@@ -277,7 +277,7 @@ export default function SettingsScreen() {
                     
                     <View style={styles.row}>
                         <Text style={[styles.label, { color: themeColors.text }]}>Version</Text>
-                        <Text style={[styles.value, { color: themeColors.subText }]}>1.0.1</Text>
+                        <Text style={[styles.value, { color: themeColors.subText }]}>1.2.0</Text>
                     </View>
                     <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
                     <View style={styles.row}>
