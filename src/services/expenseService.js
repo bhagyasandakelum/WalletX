@@ -53,6 +53,32 @@ export const deleteExpense = async (id) => {
   });
 };
 
+export const updateExpense = async (id, title, amount, category) => {
+  const db = await getDBConnection();
+  await db.withTransactionAsync(async () => {
+    // Get expense details first
+    const expense = await db.getFirstAsync('SELECT * FROM expenses WHERE id = ?', id);
+    if (!expense) return;
+
+    // Refund / deduct the difference in balance
+    const diff = expense.amount - amount;
+    await db.runAsync(
+      'UPDATE accounts SET balance = balance + ? WHERE id = ?',
+      diff,
+      expense.accountId
+    );
+
+    // Update the expense
+    await db.runAsync(
+      'UPDATE expenses SET title = ?, amount = ?, category = ? WHERE id = ?',
+      title,
+      amount,
+      category,
+      id
+    );
+  });
+};
+
 /* ---------------- EXPENSES ---------------- */
 
 export const addExpense = async (title, amount, category, accountId) => {

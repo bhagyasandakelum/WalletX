@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 
-export default function ExpenseItem({ item, onDelete }) {
+export default function ExpenseItem({ item, onEdit, onDelete }) {
     const handleDelete = () => {
         Alert.alert(
             "Delete Expense",
@@ -32,9 +32,14 @@ export default function ExpenseItem({ item, onDelete }) {
             </View>
             <View style={styles.right}>
                 <Text style={styles.amount}>-රු {item.amount.toFixed(2)}</Text>
-                <Pressable hitSlop={10} onPress={handleDelete} style={styles.deleteBtn}>
-                    <Text style={styles.deleteText}>✕</Text>
-                </Pressable>
+                <View style={styles.actionRow}>
+                    <Pressable hitSlop={10} onPress={() => onEdit && onEdit(item)} style={styles.editBtn}>
+                        <Text style={styles.editText}>✏️</Text>
+                    </Pressable>
+                    <Pressable hitSlop={10} onPress={handleDelete} style={styles.deleteBtn}>
+                        <Text style={styles.deleteText}>✕</Text>
+                    </Pressable>
+                </View>
             </View>
         </View>
     );
@@ -97,11 +102,30 @@ const styles = StyleSheet.create({
         height: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 4,
     },
     deleteText: {
         fontSize: 12,
         color: '#ef4444',
+        fontWeight: 'bold',
+    },
+    actionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 4,
+    },
+    editBtn: {
+        padding: 4,
+        backgroundColor: '#e0f2fe',
+        borderRadius: 8,
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    editText: {
+        fontSize: 12,
+        color: '#0284c7',
         fontWeight: 'bold',
     },
 });

@@ -24,6 +24,7 @@ import {
   updateAccount as updateAccountService,
   addExpense as addExpenseService,
   deleteExpense as deleteExpenseService,
+  updateExpense as updateExpenseService,
 } from '../services/expenseService';
 
 import ScreenWrapper from '../components/ScreenWrapper';
@@ -87,6 +88,7 @@ export default function HomeScreen() {
   const [expenseTitle, setExpenseTitle] = useState('');
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseCategory, setExpenseCategory] = useState('Others'); // Default category
+  const [editingExpense, setEditingExpense] = useState(null);
 
   /* ---------------- HANDLERS ---------------- */
   const handleSaveAccount = async () => {
@@ -123,11 +125,26 @@ export default function HomeScreen() {
     setShowAddAccount(true);
   };
 
-  const handleAddExpense = async () => {
+  const openAddExpense = () => {
+    setExpenseTitle('');
+    setExpenseAmount('');
+    setExpenseCategory('Others');
+    setEditingExpense(null);
+    setShowAddExpense(true);
+  };
+
+  const openEditExpense = (expense) => {
+    setExpenseTitle(expense.title);
+    setExpenseAmount(expense.amount.toString());
+    setExpenseCategory(expense.category || 'Others');
+    setEditingExpense(expense);
+    setShowAddExpense(true);
+  };
+
+  const handleSaveExpense = async () => {
     if (!expenseTitle || !expenseAmount || !selectedAccount) return;
     try {
       const amountNum = Number(expenseAmount);
-      await addExpenseService(expenseTitle, amountNum, expenseCategory, selectedAccount.id);
       
       // Check budget
       if (weeklyBudget && weeklyBudget > 0) {
@@ -136,6 +153,9 @@ export default function HomeScreen() {
         const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
         
         const thisWeekTotal = expenses.reduce((sum, exp) => {
+          if (editingExpense && exp.id === editingExpense.id) {
+            return sum;
+          }
           const expDate = new Date(exp.date);
           if (expDate >= startOfWeek) {
             return sum + exp.amount;
@@ -151,14 +171,21 @@ export default function HomeScreen() {
         }
       }
 
+      if (editingExpense) {
+        await updateExpenseService(editingExpense.id, expenseTitle, amountNum, expenseCategory);
+      } else {
+        await addExpenseService(expenseTitle, amountNum, expenseCategory, selectedAccount.id);
+      }
+      
       await reloadData();
       setExpenseTitle('');
       setExpenseAmount('');
       setExpenseCategory('Others');
+      setEditingExpense(null);
       setShowAddExpense(false);
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Could not add expense');
+      Alert.alert('Error', editingExpense ? 'Could not update expense' : 'Could not add expense');
     }
   };
 
@@ -288,7 +315,7 @@ export default function HomeScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <ExpenseItem item={item} onDelete={handleDeleteExpense} />
+          <ExpenseItem item={item} onEdit={openEditExpense} onDelete={handleDeleteExpense} />
         )}
       />
 
@@ -299,7 +326,7 @@ export default function HomeScreen() {
       <View style={[styles.fabContainer, { bottom: 125 + insets.bottom }]}>
         <AppButton
           title="+ Expense"
-          onPress={() => selectedAccount ? setShowAddExpense(true) : Alert.alert('Error', 'Please create an account first')}
+          onPress={() => selectedAccount ? openAddExpense() : Alert.alert('Error', 'Please create an account first')}
           style={styles.fab}
           color={['#00d09c', '#00dfa8']}
         />
@@ -350,7 +377,7 @@ export default function HomeScreen() {
         >
           <View style={styles.modalOverlay}>
             <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
-              <Text style={styles.modalHeader}>New Expense</Text>
+              <Text style={styles.modalHeader}>{editingExpense ? 'Edit Expense' : 'New Expense'}</Text>
               <TextInput
                 placeholder="What did you buy?"
                 style={styles.input}
@@ -387,10 +414,15 @@ export default function HomeScreen() {
               </ScrollView>
 
               <View style={styles.modalButtons}>
-                <Pressable style={styles.cancelButton} onPress={() => setShowAddExpense(false)}>
+                <Pressable style={styles.cancelButton} onPress={() => { setShowAddExpense(false); setEditingExpense(null); }}>
                   <Text style={styles.cancelText}>Cancel</Text>
                 </Pressable>
-                <AppButton title="Add Expense" onPress={handleAddExpense} style={{ flex: 1 }} color={['#ef4444', '#f87171']} />
+                <AppButton
+                  title={editingExpense ? 'Save Changes' : 'Add Expense'}
+                  onPress={handleSaveExpense}
+                  style={{ flex: 1 }}
+                  color={editingExpense ? ['#3b82f6', '#2563eb'] : ['#ef4444', '#f87171']}
+                />
               </View>
             </View>
           </View>
