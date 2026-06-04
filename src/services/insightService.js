@@ -1,14 +1,18 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// Set up the foreground notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldShowBadge: false,
-  }),
-});
+// Set up the foreground notification handler safely
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldShowBadge: false,
+    }),
+  });
+} catch (error) {
+  console.warn('Failed to set notification handler:', error);
+}
 
 /**
  * Request notification permissions and send a native system alert
@@ -32,7 +36,7 @@ export const triggerSystemNotification = async (title, body) => {
         title,
         body,
         sound: true,
-        priority: Notifications.AndroidNotificationPriority.HIGH,
+        priority: Notifications.AndroidNotificationPriority?.HIGH || 4,
       },
       trigger: null, // deliver immediately
     });

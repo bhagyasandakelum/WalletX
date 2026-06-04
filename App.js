@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// Ignore expo-notifications deprecation and unsupported warnings in Expo Go
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  'expo-notifications` functionality is not fully supported in Expo Go'
+]);
 
 import { initDB } from './src/database/db';
 import { WalletProvider } from './src/context/WalletContext';
