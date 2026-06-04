@@ -21,7 +21,6 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.bhagyaslive.walletx",
-      "versionCode": 3,
       "permissions": [
         "INTERNET",
         "VIBRATE"
