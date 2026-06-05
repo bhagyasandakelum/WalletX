@@ -99,36 +99,38 @@ export default function App() {
     hideNativeSplash();
   }, []);
 
+  return (
+    <SafeAreaProvider>
+      <AppContent 
+        appIsReady={appIsReady} 
+        isAuthenticated={isAuthenticated} 
+        handleUnlock={handleUnlock} 
+      />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent({ appIsReady, isAuthenticated, handleUnlock }) {
   if (!appIsReady) {
-    return (
-      <SafeAreaProvider>
-        <CustomSplashScreen />
-      </SafeAreaProvider>
-    );
+    return <CustomSplashScreen />;
   }
 
   if (!isAuthenticated) {
-    return (
-      <SafeAreaProvider>
-        <LockScreen onUnlock={handleUnlock} />
-      </SafeAreaProvider>
-    );
+    return <LockScreen onUnlock={handleUnlock} />;
   }
 
   return (
-    <SafeAreaProvider>
-      <WalletProvider>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Stats" component={StatsScreen} />
-            <Stack.Screen name="Budget" component={BudgetScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </WalletProvider>
-    </SafeAreaProvider>
+    <WalletProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Stats" component={StatsScreen} />
+          <Stack.Screen name="Budget" component={BudgetScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="Settings" component={SettingsScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </WalletProvider>
   );
 }
 
