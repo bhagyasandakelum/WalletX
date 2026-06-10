@@ -126,14 +126,6 @@ export default function NotificationsScreen() {
                     <Text style={[styles.headerTitle, { color: themeColors.text }]}>Insights & Alerts</Text>
                     <Text style={[styles.headerSubtitle, { color: themeColors.subText }]}>Smart Financial Analytics</Text>
                 </View>
-                <View style={styles.headerActions}>
-                    <Pressable 
-                        style={[styles.headerBtn, { backgroundColor: themeColors.cardBg, borderColor: themeColors.border }]} 
-                        onPress={handleTriggerInsights}
-                    >
-                        <Feather name="credit-card" size={20} color="#00D09C" />
-                    </Pressable>
-                </View>
             </View>
 
             <View style={{ flex: 1, paddingHorizontal: 20 }}>
@@ -161,7 +153,7 @@ export default function NotificationsScreen() {
                             </View>
                             <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Financial Insights Yet</Text>
                             <Text style={[styles.emptyDesc, { color: themeColors.subText }]}>
-                                Click the Wallet card button in the top right to analyze your transactions and generate smart alerts instantly!
+                                Add transactions and set a budget to start receiving automated financial insights and smart alerts!
                             </Text>
                         </View>
                     }

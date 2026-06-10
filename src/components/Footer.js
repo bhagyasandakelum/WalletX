@@ -2,14 +2,18 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useWallet } from '../context/WalletContext';
 
 export default function Footer() {
     const navigation = useNavigation();
     const route = useRoute();
     const currentRoute = route.name;
     const insets = useSafeAreaInsets();
+
+    const wallet = useWallet();
+    const notifications = wallet ? wallet.notifications : [];
+    const hasUnread = notifications.some(n => !n.read);
 
     return (
         <View style={[styles.footer, { bottom: Math.max(insets.bottom + 10, 20) }]}>
@@ -41,7 +45,10 @@ export default function Footer() {
                 style={styles.footerItem}
                 onPress={() => navigation.navigate('Notifications')}
             >
-                <Feather name="bell" size={22} color={currentRoute === 'Notifications' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
+                <View style={styles.iconWrapper}>
+                    <Feather name="bell" size={22} color={currentRoute === 'Notifications' ? '#00D09C' : '#9ca3af'} style={styles.footerIcon} />
+                    {hasUnread && <View testID="unread-badge" style={styles.badgeDot} />}
+                </View>
                 <Text style={[styles.footerText, currentRoute === 'Notifications' && styles.footerTextActive]}>Insights</Text>
             </Pressable>
 
@@ -89,5 +96,17 @@ const styles = StyleSheet.create({
     },
     footerTextActive: {
         color: '#00D09C',
+    },
+    iconWrapper: {
+        position: 'relative',
+    },
+    badgeDot: {
+        position: 'absolute',
+        top: -1,
+        right: -2,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: '#ef4444',
     },
 });

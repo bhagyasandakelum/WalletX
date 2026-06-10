@@ -159,6 +159,13 @@ export const WalletProvider = ({ children }) => {
         loadExpenses();
     }, [loadExpenses]);
 
+    // Automatically trigger insight generation when expenses or weekly budget changes
+    useEffect(() => {
+        if (selectedAccount) {
+            triggerInsightGeneration();
+        }
+    }, [expenses, weeklyBudget]);
+
     // Exposed method to force refresh (e.g. after adding expense)
     const reloadData = async () => {
         await loadAccounts();
