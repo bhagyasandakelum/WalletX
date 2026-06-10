@@ -67,13 +67,19 @@ export const WalletProvider = ({ children }) => {
             const budget = await getSetting('weeklyBudget');
             setWeeklyBudget(budget ? Number(budget) : null);
 
+            const clearedStr = await getSetting('clearedNotificationIds');
+            const clearedIds = clearedStr ? JSON.parse(clearedStr) : [];
+
             const loadedNotifications = await getSetting('notifications');
             if (loadedNotifications) {
-                setNotifications(JSON.parse(loadedNotifications));
+                const parsed = JSON.parse(loadedNotifications);
+                const filtered = parsed.filter(n => !clearedIds.includes(n.id));
+                setNotifications(filtered);
             } else {
                 const initial = generateFinancialInsights([], budget ? Number(budget) : null);
-                setNotifications(initial);
-                await setSetting('notifications', JSON.stringify(initial));
+                const filtered = initial.filter(n => !clearedIds.includes(n.id));
+                setNotifications(filtered);
+                await setSetting('notifications', JSON.stringify(filtered));
             }
         } catch (error) {
             console.error('Context: Failed to load settings', error);
@@ -94,10 +100,15 @@ export const WalletProvider = ({ children }) => {
             const currentBudget = weeklyBudget;
             const generated = generateFinancialInsights(expenses, currentBudget);
 
-            setNotifications(generated);
-            await setSetting('notifications', JSON.stringify(generated));
+            const clearedStr = await getSetting('clearedNotificationIds');
+            const clearedIds = clearedStr ? JSON.parse(clearedStr) : [];
 
-            const alertNotification = generated.find(n => !n.read) || generated[0];
+            const filtered = generated.filter(n => !clearedIds.includes(n.id));
+
+            setNotifications(filtered);
+            await setSetting('notifications', JSON.stringify(filtered));
+
+            const alertNotification = filtered.find(n => !n.read) || filtered[0];
             if (alertNotification) {
                 await triggerSystemNotification(
                     alertNotification.title,
@@ -123,6 +134,13 @@ export const WalletProvider = ({ children }) => {
 
     const clearAllNotifications = async () => {
         try {
+            const currentIds = notifications.map(n => n.id);
+            const clearedStr = await getSetting('clearedNotificationIds');
+            const clearedIds = clearedStr ? JSON.parse(clearedStr) : [];
+            const updatedClearedIds = Array.from(new Set([...clearedIds, ...currentIds]));
+
+            await setSetting('clearedNotificationIds', JSON.stringify(updatedClearedIds));
+
             setNotifications([]);
             await setSetting('notifications', JSON.stringify([]));
         } catch (error) {
